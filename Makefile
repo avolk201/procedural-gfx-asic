@@ -20,9 +20,12 @@ sim_i2c: rtl/i2c_master.sv tb/sim_i2c.cpp
 lint: $(RTL)
 	verilator --lint-only -Wall $(RTL)
 
+lint_i2c: rtl/i2c_master.sv
+	verilator --lint-only -Wall rtl/i2c_master.sv
+
 # Clean up build artifacts
 clean:
 	rm -rf obj_dir
 	rm -f sim/*.ppm
 
-.PHONY: sim lint clean
+.PHONY: sim lint lint_i2c clean
