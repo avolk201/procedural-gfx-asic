@@ -1,3 +1,4 @@
+/* verilator lint_off UNUSEDPARAM */
 package apu_pkg;
     // VGA 640x480@60Hz timing constants
     // Derived from VESA DMT standard. All values in pixel clocks.
@@ -17,3 +18,4 @@ package apu_pkg;
     typedef logic [7:0] rgb332_t;
     typedef logic [9:0] coord_t;
 endpackage
+/* verilator lint_on UNUSEDPARAM */
