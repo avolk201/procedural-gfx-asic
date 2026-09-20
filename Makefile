@@ -1,6 +1,5 @@
 # Makefile for rv32-apu-tapeout simulation
 
-# Added colorbars and top to the RTL list
 RTL = rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv
 TB  = tb/sim_main.cpp
 OUT = sim_apu_top
@@ -28,4 +27,6 @@ clean:
 	rm -rf obj_dir
 	rm -f sim/*.ppm
 
-.PHONY: sim lint lint_i2c clean
+# sim/ and obj_dir/ are real directories, so the run targets must be phony
+# or make treats them as up to date on a rerun
+.PHONY: sim sim_i2c lint lint_i2c clean
