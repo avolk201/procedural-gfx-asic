@@ -244,3 +244,66 @@ rename itself is recorded here, so provenance survives.
 
 Consequence: the board wrapper (de10nano_top) instantiates i2c_controller;
 future modules and docs use controller/target from the start.
+
+## D15: storage path is an SPI microSD module on GPIO, not the onboard slot
+
+2026-09-20. Phase 8 architecture.
+
+Context: DE10-Nano manual Table 3-19 shows the microSD socket wired to
+HPS_SD_CLK/CMD/DATA[3:0] on pins B8, D14, C13, B6, B11, B9. HPS-dedicated
+pins are not reachable from FPGA fabric, so RTL cannot drive the onboard
+slot.
+
+Options:
+1. SPI-mode microSD module on the GPIO header, driven by fabric RTL.
+2. HPS bare-metal SD driver, handed to fabric over the H2F bridge.
+3. HPS Linux with assets on a filesystem.
+
+Decision: option 1.
+
+Rationale: fabric-native, so the whole storage path (SPI controller, card
+init sequence, container loader) is RTL verified in Verilator against a C++
+card model, same closed-loop method as the I2C work (D5, D8). No ARM
+dependency, no bootloader story, no bridge arbitration. SPI mode is slow
+(~1-10 Mbit/s), which is fine: the workload is bulk asset/code load at boot,
+not streaming. Cost: an external module (~$3), a few GPIO pins, 3.3V levels
+both sides so no translation needed.
+
+Consequences: the onboard slot stays dark for RTL purposes; if a future use
+case wants it, that is an HPS bare-metal project of its own. Pin assignment
+for the SPI bus (4-6 wires: SCK, MOSI, MISO, CS, optional detect) is
+deferred to Phase 8 and gets the same manual-citation treatment as the HDMI
+pins. Container format work (Phase 8) is unaffected by this choice; only the
+byte source changes.
+
+Evidence: Table 3-19, cited in docs/references.md.
+
+## D16: monorepo until split triggers; project renamed rv32-apu
+
+2026-09-20. Repo architecture.
+
+Decision 1, repo layout: stay one repo. Components split out only when they
+acquire their own users, release cadence, or CI story. Concrete triggers:
+- CPU core spins out when it passes an ISA test suite and its tb references
+  nothing outside rtl/cpu.
+- Toolchain (assembler, packer, png2tex) spins out when a game build uses it
+  without touching the FPGA tree.
+Splits use git filter-repo so subtree history (including devlog-relevant
+commits) travels with the code. Directory discipline until then: rtl/ for
+fabric, tools/<name>/ for Python, docs/ stays a single ledger.
+
+Rejected: splitting now into gpu/cpu/compiler/toolchain repos. Boundaries
+would be guesses (no container format, no ISA tests, no CPU), the ADR and
+devlog ledgers would fracture, and the end-to-end integration story is the
+point of the project. The original AI-era repo consumed rv32-toolchain as a
+submodule; the symmetry of publishing my own version of it at Phase 10 and
+consuming it back is deliberate, not accidental.
+
+Decision 2, name: rv32-apu-tapeout -> rv32-apu. "tapeout" claimed GDSII/
+foundry work that does not exist and is not scheduled (the old README
+disclaimed it itself). "apu" is true at both ends of the roadmap: a pixel
+accelerator today, and once Phase 6 lands, literally an audio+video
+processing unit, CPU-directed over the register interface, audio embedded
+in HDMI via the ADV7513 I2S pins already reserved in the qsf. GitHub repo
+takes the name when the remote is created (none exists yet; this repo is
+local-only). README title updated in the same commit as this entry.

@@ -1,4 +1,4 @@
-# rv32-apu-tapeout
+# rv32-apu
 
 Framebuffer-less procedural graphics accelerator for an RV32IMAC SoC.
 Pixels are computed during active scanout instead of stored in SRAM.
