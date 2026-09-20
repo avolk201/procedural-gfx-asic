@@ -16,8 +16,8 @@
 //   clk_i / (2 * CLK_DIV) = 50 MHz / 500 = 100 kHz.
 //
 // D4 rule: this core has no inout ports. The tristate/pin arithmetic lives in
-//   the board wrapper (de10nano_top, Phase 2), which is the only module in the
-//   design allowed to say `inout`.
+//   the board wrapper (de10nano_top), which is the only module in the design
+//   allowed to say `inout`.
 
 module i2c_controller #(
     parameter int unsigned CLK_DIV = 250
@@ -130,8 +130,13 @@ module i2c_controller #(
                         phase  <= 1'b0;
                         if (sda_i == 1'b1) ack_err_o <= 1'b1;
                         byte_idx <= byte_idx + 1'b1;
-                        if (byte_idx == 2'd2) state <= STOP;
-                        else state <= SEND_BYTE;
+                        if (byte_idx == 2'd2) begin
+                            state   <= STOP;
+                            bit_cnt <= 3'd2;  // STOP walks 2 -> 1 -> 0
+                        end else begin
+                            state   <= SEND_BYTE;
+                            bit_cnt <= 3'd7;  // reload MSB for the next byte
+                        end
                     end
                 end
                 STOP: begin
