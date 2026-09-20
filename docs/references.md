@@ -23,7 +23,9 @@ can be traced to a page.
 ## Terasic DE10-Nano user manual + schematic
 - Where: terasic.com.tw, DE10-Nano product page (manual and CD/schematic zip)
 - Revision / accessed: (fill in)
-- Relied on: FPGA pin tables (50 MHz clock, HDMI I2C, HDMI TX bus), ADV7513
+- Relied on: Table 3-13 HDMI pin assignments (transcribed into
+  constraints/de10nano_pinout.qsf 2026-09-20), FPGA pin tables (50 MHz
+  clock, HDMI I2C, HDMI TX bus), ADV7513
   connection details incl. shared HPS I2C caveat, pushbutton/LED pins.
 - Used by: the DE10-Nano pinout constraints and de10nano_top.sv (both
   drafted locally, untracked until verified against this manual before

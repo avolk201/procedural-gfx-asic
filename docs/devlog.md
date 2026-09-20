@@ -123,3 +123,34 @@ Note: without margin, the watchdog fails healthy runs and becomes a source of fl
 Observed: none. The file compiled because `verilated.h` transitively includes `string.h`.
 
 Note: include what you use. This belongs with B8: Verilator accepts constructs that stricter tools reject. Acceptance by one tool is not compliance with the standard.
+
+## B13: HDMI qsf written from memory, 39 of 40 pins wrong
+
+2026-09-20. constraints/de10nano_pinout.qsf. Status: FIXED in this commit.
+
+Symptom: none on hardware (no board yet). Caught by transcribing Terasic
+manual Table 3-13 during audio feasibility research.
+
+Findings vs the official table:
+- hdmi_hsync was AD12, which is video data D0; real HS is T8
+- hdmi_pclk was AE11, which is video data D6; real pixel clock is AG5
+- I2C was AH10/AG11; real pins are U10/AA4
+- DE, VS wrong (real: AD19, V13)
+- all 24 data-bus assignments fabricated; two collided with audio pins
+  (T12 = I2S SCLK, U11 = MCLK)
+- only clk_50m_i = V11 survived, and it is not covered by Table 3-13
+
+Cause: the original file was generated, never transcribed from the manual,
+and carried into the rebuild during cleanup. It was flagged "untested" in
+the roadmap, but flagging a landmine is not defusing it.
+
+Fix: full rewrite from Table 3-13 with official signal names, audio pins
+commented as Phase 6 reservations, TODOs for the three items Table 3-13
+does not answer (clock pin section, IO_STANDARD string, ADV7513 channel
+order). references.md now cites the table.
+
+Lesson: constraints files are code. Every pin is a claim with a source, and
+the source is the manual, not memory. The cheapest diff against the manual
+is always the one done before the hardware arrives; the same file flashed on
+a real board would have driven pixel clock onto a data pin and produced a
+black screen with no obvious cause.
