@@ -12,3 +12,6 @@ closed-loop protocol testbench (`make sim_i2c`).
 Design decisions: [docs/decisions.md](docs/decisions.md).
 Bug graveyard: [docs/devlog.md](docs/devlog.md).
 Spec references: [docs/references.md](docs/references.md).
+## License
+
+MIT. See [LICENSE](LICENSE).
