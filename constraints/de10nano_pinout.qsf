@@ -1,0 +1,64 @@
+# DE10-Nano pin assignments for HDMI (ADV7513) and clock.
+#
+# Transcribed line-by-line from Terasic DE10-Nano User Manual, Table 3-13
+# "HDMI Pin Assignments, Schematic Signal Names, and Functions" (accessed
+# 2026-09-20, see docs/references.md). This file replaced an earlier version
+# written from memory; every line in that one except the clock was wrong
+# (devlog B13). Do not add pins from memory again.
+#
+# Port names below are the intended de10nano_top.sv top-level names.
+# TODO before first Quartus run:
+#   - confirm clk_50m_i = PIN_V11 against the manual's clock section
+#     (Table 3-13 does not cover the oscillator)
+#   - add IO_STANDARD assignments; confirm the exact string the manual/
+#     Terasic example qsf uses for these pins ("3.3-V LVTTL" expected)
+#   - confirm ADV7513 24-bit input channel order (which of D23:16 / D15:8 /
+#     D7:0 is red) against the ADV7513 datasheet before wiring the RGB332
+#     replication in de10nano_top.sv
+
+# Clock
+set_location_assignment PIN_V11 -to clk_50m_i
+
+# HDMI video data, 24-bit bus
+set_location_assignment PIN_AD12 -to hdmi_tx_d[0]
+set_location_assignment PIN_AE12 -to hdmi_tx_d[1]
+set_location_assignment PIN_W8   -to hdmi_tx_d[2]
+set_location_assignment PIN_Y8   -to hdmi_tx_d[3]
+set_location_assignment PIN_AD11 -to hdmi_tx_d[4]
+set_location_assignment PIN_AD10 -to hdmi_tx_d[5]
+set_location_assignment PIN_AE11 -to hdmi_tx_d[6]
+set_location_assignment PIN_Y5   -to hdmi_tx_d[7]
+set_location_assignment PIN_AF10 -to hdmi_tx_d[8]
+set_location_assignment PIN_Y4   -to hdmi_tx_d[9]
+set_location_assignment PIN_AE9  -to hdmi_tx_d[10]
+set_location_assignment PIN_AB4  -to hdmi_tx_d[11]
+set_location_assignment PIN_AE7  -to hdmi_tx_d[12]
+set_location_assignment PIN_AF6  -to hdmi_tx_d[13]
+set_location_assignment PIN_AF8  -to hdmi_tx_d[14]
+set_location_assignment PIN_AF5  -to hdmi_tx_d[15]
+set_location_assignment PIN_AE4  -to hdmi_tx_d[16]
+set_location_assignment PIN_AH2  -to hdmi_tx_d[17]
+set_location_assignment PIN_AH4  -to hdmi_tx_d[18]
+set_location_assignment PIN_AH5  -to hdmi_tx_d[19]
+set_location_assignment PIN_AH6  -to hdmi_tx_d[20]
+set_location_assignment PIN_AG6  -to hdmi_tx_d[21]
+set_location_assignment PIN_AF9  -to hdmi_tx_d[22]
+set_location_assignment PIN_AE8  -to hdmi_tx_d[23]
+
+# HDMI control
+set_location_assignment PIN_AG5  -to hdmi_tx_clk
+set_location_assignment PIN_AD19 -to hdmi_tx_de
+set_location_assignment PIN_T8   -to hdmi_tx_hs
+set_location_assignment PIN_V13  -to hdmi_tx_vs
+set_location_assignment PIN_AF11 -to hdmi_tx_int    # ADV7513 -> FPGA, input; unused in Phase 2
+
+# I2C to ADV7513 (shared with HPS; fine bare-metal, contentious under Linux)
+set_location_assignment PIN_U10  -to hdmi_i2c_scl
+set_location_assignment PIN_AA4  -to hdmi_i2c_sda
+
+# Audio inputs, RESERVED for Phase 6 (HDMI audio over the same ADV7513).
+# Not driven in Phase 2; uncomment and name ports when the I2S TX exists.
+# set_location_assignment PIN_T13  -to hdmi_i2s0     # I2S ch0 data
+# set_location_assignment PIN_U11  -to hdmi_mclk     # audio reference clock
+# set_location_assignment PIN_T11  -to hdmi_lrclk    # L/R frame clock
+# set_location_assignment PIN_T12  -to hdmi_sclk     # I2S bit clock
