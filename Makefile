@@ -11,17 +11,17 @@ sim: $(RTL) $(TB)
 	verilator --cc --exe --build -Wall --top-module apu_top $(RTL) $(TB) -o $(OUT)
 	./obj_dir/$(OUT)
 
-sim_i2c: rtl/i2c_master.sv tb/sim_i2c.cpp
+sim_i2c: rtl/i2c_controller.sv tb/sim_i2c.cpp
 	@mkdir -p sim
-	verilator --cc --exe --build -Wall --top-module i2c_master rtl/i2c_master.sv tb/sim_i2c.cpp -o sim_i2c
+	verilator --cc --exe --build -Wall --top-module i2c_controller rtl/i2c_controller.sv tb/sim_i2c.cpp -o sim_i2c
 	./obj_dir/sim_i2c
 
 # Lint only (no C++ build)
 lint: $(RTL)
 	verilator --lint-only -Wall $(RTL)
 
-lint_i2c: rtl/i2c_master.sv
-	verilator --lint-only -Wall rtl/i2c_master.sv
+lint_i2c: rtl/i2c_controller.sv
+	verilator --lint-only -Wall rtl/i2c_controller.sv
 
 # Clean up build artifacts
 clean:

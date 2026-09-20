@@ -1,4 +1,4 @@
-// i2c_master - write-only I2C master for ADV7513 configuration.
+// i2c_controller - write-only I2C controller for ADV7513 configuration.
 //
 // start_i: caller asserts and HOLDS until busy_o rises, then releases.
 //   One-cycle pulses are dropped by design: start_i is sampled only on tick,
@@ -19,7 +19,7 @@
 //   the board wrapper (de10nano_top, Phase 2), which is the only module in the
 //   design allowed to say `inout`.
 
-module i2c_master #(
+module i2c_controller #(
     parameter int unsigned CLK_DIV = 250
 )(
     input  logic       clk_i,
