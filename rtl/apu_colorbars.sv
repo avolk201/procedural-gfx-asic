@@ -3,9 +3,7 @@ module apu_colorbars (
     input  logic               rst_n_i,
     input  logic               de_i,
     input  apu_pkg::coord_t    x_i,
-    /* verilator lint_off UNUSEDSIGNAL */
-    input  apu_pkg::coord_t    y_i,       // unused, but kept for interface consistency
-    /* verilator lint_on UNUSEDSIGNAL */
+    input  apu_pkg::coord_t    y_i,       // unused: bars are vertical; kept for the scene interface
     output logic               de_o,      // delayed DE, aligned with rgb_o
     output apu_pkg::rgb332_t   rgb_o
 );
