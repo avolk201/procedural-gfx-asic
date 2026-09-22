@@ -2,23 +2,18 @@ module apu_top (
     input  logic             clk_pix_i,
     input  logic             rst_n_i,
     
-    // VGA Timing Outputs
     output logic             hsync_o,
     output logic             vsync_o,
     output logic             sof_o,
     output logic             sol_o,
-    
-    // Pixel Pipeline Outputs
-    output logic             de_o,      // Note: this comes from colorbars!
+    output logic             de_o,      // delayed by scene generator to match registered rgb_o
     output apu_pkg::rgb332_t rgb_o
 );
 
-    // Internal wires connecting the two modules
     logic             vga_de;
     apu_pkg::coord_t  vga_x;
     apu_pkg::coord_t  vga_y;
 
-    // --- VGA Timing Generator ---
     apu_vga_timing u_vga (
         .clk_pix_i (clk_pix_i),
         .rst_n_i   (rst_n_i),
@@ -31,7 +26,6 @@ module apu_top (
         .y_o       (vga_y)
     );
 
-    // --- Colorbars Scene Module ---
     apu_colorbars u_colorbars (
         .clk_pix_i (clk_pix_i),
         .rst_n_i   (rst_n_i),

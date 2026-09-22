@@ -23,8 +23,8 @@ module apu_colorbars (
             de_o  <= 1'b0;
             rgb_o <= '0;
         end else begin
-            de_o  <= de_i;              // delay de by 1 cycle to match rgb
-            rgb_o <= color_next;        // registered color
+            de_o  <= de_i;              // delay de by 1 cycle to match rgb_o
+            rgb_o <= color_next;
         end
     end
 

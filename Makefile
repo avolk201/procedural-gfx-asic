@@ -27,6 +27,9 @@ lint: $(RTL)
 lint_i2c: rtl/i2c_controller.sv
 	verilator --lint-only -Wall rtl/i2c_controller.sv
 
+lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
+	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
+
 # Clean up build artifacts
 clean:
 	rm -rf obj_dir
@@ -34,4 +37,4 @@ clean:
 
 # sim/ and obj_dir/ are real directories, so the run targets must be phony
 # or make treats them as up to date on a rerun
-.PHONY: sim sim_i2c sim_config lint lint_i2c clean
+.PHONY: sim sim_i2c sim_config lint lint_i2c lint_top clean

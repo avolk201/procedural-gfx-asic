@@ -38,8 +38,8 @@ module apu_vga_timing (
 
 		de_next = (h_cnt < apu_pkg::coord_t'(apu_pkg::ACTIVE_W)) &&
 				  (v_cnt < apu_pkg::coord_t'(apu_pkg::ACTIVE_H));
-        		// HSync active low during sync pulse region
 
+		// VESA 640x480@60Hz DMT specifies active-low sync pulses
 		hsync_next = !(h_cnt >= apu_pkg::coord_t'(H_SYNC_START) && 
 		               h_cnt <  apu_pkg::coord_t'(H_SYNC_END));
 		vsync_next = !(v_cnt >= apu_pkg::coord_t'(V_SYNC_START) && 

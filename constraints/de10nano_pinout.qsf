@@ -1,25 +1,28 @@
-# DE10-Nano pin assignments for HDMI (ADV7513) and clock.
-#
-# Transcribed line-by-line from Terasic DE10-Nano User Manual, Table 3-13
-# "HDMI Pin Assignments, Schematic Signal Names, and Functions" (accessed
-# 2026-09-20, see docs/references.md). This file replaced an earlier version
-# written from memory; every line in that one except the clock was wrong
-# (devlog B13). Do not add pins from memory again.
-#
-# Port names below are the intended de10nano_top.sv top-level names.
-# TODO before first Quartus run:
-#   - confirm clk_50m_i = PIN_V11 against the manual's clock section
-#     (Table 3-13 does not cover the oscillator)
-#   - add IO_STANDARD assignments; confirm the exact string the manual/
-#     Terasic example qsf uses for these pins ("3.3-V LVTTL" expected)
-#   - confirm ADV7513 24-bit input channel order (which of D23:16 / D15:8 /
-#     D7:0 is red) against the ADV7513 datasheet before wiring the RGB332
-#     replication in de10nano_top.sv
+# DE10-Nano pin assignments for HDMI (ADV7513), clock, pushbuttons, and LEDs.
+# Transcribed from Terasic DE10-Nano User Manual (Table 3-3, 3-4, 3-13).
 
-# Clock
+# Clock (50 MHz oscillator, Table 3-1)
 set_location_assignment PIN_V11 -to clk_50m_i
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_50m_i
 
-# HDMI video data, 24-bit bus
+# Pushbuttons (KEY0/KEY1, Table 3-3: active-low)
+set_location_assignment PIN_AH17 -to btn_n_i[0]
+set_location_assignment PIN_AH16 -to btn_n_i[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to btn_n_i[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to btn_n_i[1]
+
+# Diagnostic LEDs (LED0-7, Table 3-4: active-high)
+set_location_assignment PIN_W15  -to led_o[0]
+set_location_assignment PIN_AA24 -to led_o[1]
+set_location_assignment PIN_V16  -to led_o[2]
+set_location_assignment PIN_V15  -to led_o[3]
+set_location_assignment PIN_AF26 -to led_o[4]
+set_location_assignment PIN_AE26 -to led_o[5]
+set_location_assignment PIN_Y16  -to led_o[6]
+set_location_assignment PIN_AA23 -to led_o[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to led_o*
+
+# HDMI video data, 24-bit bus (Table 3-13)
 set_location_assignment PIN_AD12 -to hdmi_tx_d[0]
 set_location_assignment PIN_AE12 -to hdmi_tx_d[1]
 set_location_assignment PIN_W8   -to hdmi_tx_d[2]
@@ -44,21 +47,22 @@ set_location_assignment PIN_AH6  -to hdmi_tx_d[20]
 set_location_assignment PIN_AG6  -to hdmi_tx_d[21]
 set_location_assignment PIN_AF9  -to hdmi_tx_d[22]
 set_location_assignment PIN_AE8  -to hdmi_tx_d[23]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_d*
 
 # HDMI control
 set_location_assignment PIN_AG5  -to hdmi_tx_clk
 set_location_assignment PIN_AD19 -to hdmi_tx_de
 set_location_assignment PIN_T8   -to hdmi_tx_hs
 set_location_assignment PIN_V13  -to hdmi_tx_vs
-set_location_assignment PIN_AF11 -to hdmi_tx_int    # ADV7513 -> FPGA, input; unused in Phase 2
+set_location_assignment PIN_AF11 -to hdmi_tx_int
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_de
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_hs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_vs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_int
 
-# I2C to ADV7513 (shared with HPS; fine bare-metal, contentious under Linux)
+# I2C to ADV7513
 set_location_assignment PIN_U10  -to hdmi_i2c_scl
 set_location_assignment PIN_AA4  -to hdmi_i2c_sda
-
-# Audio inputs, RESERVED for Phase 6 (HDMI audio over the same ADV7513).
-# Not driven in Phase 2; uncomment and name ports when the I2S TX exists.
-# set_location_assignment PIN_T13  -to hdmi_i2s0     # I2S ch0 data
-# set_location_assignment PIN_U11  -to hdmi_mclk     # audio reference clock
-# set_location_assignment PIN_T11  -to hdmi_lrclk    # L/R frame clock
-# set_location_assignment PIN_T12  -to hdmi_sclk     # I2S bit clock
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_i2c_scl
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_i2c_sda
