@@ -1,0 +1,19 @@
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEBA6U23I7
+set_global_assignment -name TOP_LEVEL_ENTITY de10nano_top
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
+
+# Source files
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_vga_timing.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_colorbars.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_top.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/i2c_controller.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/adv7513_config.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/pll_25m.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/de10nano_top.sv
+
+# Timing and pin constraints
+set_global_assignment -name SDC_FILE constraints/timing.sdc
+source constraints/de10nano_pinout.qsf

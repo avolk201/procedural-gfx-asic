@@ -1,10 +1,16 @@
 # Timing constraints, DE10-Nano.
-# Honest placeholder until Phase 2: the pixel clock PLL does not exist yet.
-# Do not use this file for closure claims.
-
 create_clock -name clk_50m -period 20.000 [get_ports clk_50m_i]
 
-# TODO(Phase 2): once the PLL exists, add
-#   create_generated_clock for the 25.175 MHz pixel clock sourced from the
-#   actual PLL output pin (name it after the real instance hierarchy), and
-#   an output clock constraint on hdmi_tx_clk for the ADV7513 interface.
+derive_pll_clocks
+derive_clock_uncertainty
+
+
+# Pushbuttons (asynchronous human inputs)
+set_false_path -from [get_ports {btn_n_i[*]}]
+
+# Diagnostic LEDs (static human-visible indicators)
+set_false_path -to [get_ports {led_o[*]}]
+
+# I2C bus (100 kHz open-drain, paced by FSM tick counter)
+set_false_path -from [get_ports {hdmi_i2c_*}]
+set_false_path -to [get_ports {hdmi_i2c_*}]

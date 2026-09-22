@@ -2,3 +2,7 @@ sim/
 *.o
 obj_dir/
 .DS_Store
+output_files/
+db/
+incremental_db/
+*.qws
