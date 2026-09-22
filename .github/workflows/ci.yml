@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y verilator build-essential python3
+
+      - name: Run top-level lint
+        run: make lint_top
+
+      - name: Run pixel pipeline simulation
+        run: make sim
+
+      - name: Run I2C controller simulation
+        run: make sim_i2c
+
+      - name: Run ADV7513 config walker simulation
+        run: make sim_config
