@@ -15,6 +15,11 @@ sim_i2c: rtl/i2c_controller.sv tb/sim_i2c.cpp
 	verilator --cc --exe --build -Wall --top-module i2c_controller rtl/i2c_controller.sv tb/sim_i2c.cpp -o sim_i2c
 	./obj_dir/sim_i2c
 
+sim_config: rtl/adv7513_config.sv rtl/i2c_controller.sv tb/tb_adv7513_config.sv tb/sim_adv7513_config.cpp
+	@mkdir -p sim
+	verilator --cc --exe --build -Wall --top-module tb_adv7513_config tb/tb_adv7513_config.sv rtl/adv7513_config.sv rtl/i2c_controller.sv tb/sim_adv7513_config.cpp -o sim_adv7513_config
+	./obj_dir/sim_adv7513_config
+
 # Lint only (no C++ build)
 lint: $(RTL)
 	verilator --lint-only -Wall $(RTL)
@@ -29,4 +34,4 @@ clean:
 
 # sim/ and obj_dir/ are real directories, so the run targets must be phony
 # or make treats them as up to date on a rerun
-.PHONY: sim sim_i2c lint lint_i2c clean
+.PHONY: sim sim_i2c sim_config lint lint_i2c clean
