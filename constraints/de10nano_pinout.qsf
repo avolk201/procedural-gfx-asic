@@ -54,12 +54,14 @@ set_location_assignment PIN_AG5  -to hdmi_tx_clk
 set_location_assignment PIN_AD19 -to hdmi_tx_de
 set_location_assignment PIN_T8   -to hdmi_tx_hs
 set_location_assignment PIN_V13  -to hdmi_tx_vs
-set_location_assignment PIN_AF11 -to hdmi_tx_int
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_de
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_hs
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_vs
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hdmi_tx_int
+
+# ADV7513 INT is routed to PIN_AF11 on the board but unused by the design;
+# left unassigned on purpose (it was assigned to a nonexistent port until
+# 2026-09-23, which made the Fitter warn on every build).
 
 # I2C to ADV7513
 set_location_assignment PIN_U10  -to hdmi_i2c_scl
