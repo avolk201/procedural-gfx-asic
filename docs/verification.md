@@ -74,13 +74,12 @@ reasoning behind each.
 
 - No four-state simulation. X-propagation and uninitialized-register classes
   are untested; an Icarus tier may cover this later.
-- Timing evidence exists (Quartus 25.1, fitter meets the pixel clock) but the
-  design is not fully constrained: the pixel-to-50 MHz toggle synchronizer
-  has no false-path, so STA reports one benign setup failure (B15). Closing
-  that is the next constraint commit.
+- Timing evidence exists (Quartus 25.1, fitter meets the pixel clock). The
+  pixel/50 MHz crossings are declared asynchronous in timing.sdc (B15);
+  the STA-clean re-run on the Bazzite box is still owed.
 - The pinout is now verified by hardware, not the manual: real video through
-  every HDMI pin, 2026-09-23. The hdmi_tx_int assignment still references a
-  port that does not exist in the design.
+  every HDMI pin, 2026-09-23. The dead hdmi_tx_int assignment is gone;
+  PIN_AF11 (ADV7513 INT) stays unassigned on purpose.
 - No coverage metric beyond this inventory.
 - No formal methods. The I2C contract is enforced by simulation only.
 
