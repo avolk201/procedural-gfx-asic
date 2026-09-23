@@ -20,6 +20,7 @@ module de10nano_top (
     logic [15:0] rst_cnt;
     /* verilator lint_on SYNCASYNCNET */
     logic sys_rst_n;
+    logic rst_50m_n;
 
     always_ff @(posedge clk_50m_i or negedge btn_n_i[0]) begin
         if (!btn_n_i[0]) begin
@@ -29,6 +30,12 @@ module de10nano_top (
         end
     end
     assign sys_rst_n = rst_cnt[15];
+
+    sync_reset u_sync_rst (
+        .clk_i      (clk_50m_i),
+        .rst_n_i    (sys_rst_n),
+        .rst_sync_n_o (rst_50m_n)
+    );
 
     // Pixel clock: 50 MHz -> 25.175 MHz for 640x480@60 VESA timing
     logic clk_pix;
@@ -43,7 +50,6 @@ module de10nano_top (
     );
 
     // Gate video pipeline until PLL locks and power rails stabilize
-    assign pix_rst_n   = sys_rst_n && pll_locked;
     assign hdmi_tx_clk = clk_pix;
 
     // Open-drain I2C bus driver (D4): line is pulled low on oe, floats to pull-up otherwise
@@ -67,7 +73,7 @@ module de10nano_top (
 
     adv7513_config u_cfg (
         .clk_i      (clk_50m_i),
-        .rst_n_i    (sys_rst_n),
+        .rst_n_i    (rst_50m_n),
         .busy_i     (i2c_busy),
         .done_i     (i2c_done),
         .ack_err_i  (i2c_ack_err),
@@ -81,7 +87,7 @@ module de10nano_top (
 
     i2c_controller u_i2c (
         .clk_i      (clk_50m_i),
-        .rst_n_i    (sys_rst_n),
+        .rst_n_i    (rst_50m_n),
         .start_i    (cfg_start),
         .dev_addr_i (cfg_dev_addr),
         .reg_addr_i (cfg_reg_addr),
@@ -93,6 +99,12 @@ module de10nano_top (
         .scl_i      (scl_in),
         .sda_oe_o   (sda_oe),
         .scl_oe_o   (scl_oe)
+    );
+
+    sync_reset u_sync_rst_pix (
+        .clk_i      (clk_pix),
+        .rst_n_i    (sys_rst_n && pll_locked),
+        .rst_sync_n_o(pix_rst_n)
     );
 
     // Diagnostics: verify power-up, PLL lock, and I2C completion before HDMI syncs

@@ -28,7 +28,7 @@ lint_i2c: rtl/i2c_controller.sv
 	verilator --lint-only -Wall rtl/i2c_controller.sv
 
 lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
-	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
+	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv rtl/sync_reset.sv
 
 # Clean up build artifacts
 clean:
