@@ -42,6 +42,9 @@ can be traced to a page.
   sec 4.7 (power down bit 0x41[6]).
 - Used by: rtl/adv7513_config.sv ROM (per-entry citations) and its tb golden
   table, POR length in rtl/de10nano_top.sv, tb constants (DEV_ADDR_OK).
-- OPEN: PD/AD strap on the DE10-Nano itself; needs the board schematic (the
-  manual PDF text does not cover it). Until checked, 0x39 is expected, not
-  proven. If pulled high the address is 0x3D and every write NACKs.
+- RESOLVED via board schematic (de10-nano-schematic-711128.pdf, local):
+  U34 pin 22 (PD/AD) strapped low, silkscreen note "Default: I2C Address
+  0x72/0x73" = 7-bit 0x39. Also: HDMI_HPD net runs to connector pin 19
+  (monitor-driven, R249 10K), so the ADV7513 will not power up without a
+  cabled monitor; and the FPGA ballmap independently confirms FPGA_CLK1_50
+  on V11 and HDMI_TX_CLK on AG5.

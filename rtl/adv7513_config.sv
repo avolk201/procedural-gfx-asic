@@ -59,8 +59,9 @@ module adv7513_config (
     logic [3:0] rom_idx;
 
     // PD/AD low at power-up latches the 8-bit address 0x72, i.e. 7-bit 0x39
-    // (HUG 6.1.5). The DE10-Nano PD/AD strap still needs confirming against
-    // the board schematic; if pulled high the address is 0x3D instead.
+    // (HUG 6.1.5). Board schematic 711128 confirms the strap: U34 note
+    // "Default: I2C Address 0x72/0x73". Power-up additionally requires HPD
+    // high, which comes from the connector: monitor cabled before power.
     assign dev_addr_o = 7'h39;
     assign reg_addr_o = ROM[rom_idx].addr;
     assign data_o     = ROM[rom_idx].data;
