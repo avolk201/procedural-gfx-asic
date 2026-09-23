@@ -109,32 +109,69 @@ module de10nano_top (
         .rst_sync_n_o(pix_rst_n)
     );
 
-    // Diagnostics: verify power-up, PLL lock, and I2C completion before HDMI syncs
+    // Diagnostics: LED0 config done, LED1 config error, LED2 PLL lock,
+    // LED3 "pipeline alive": ~1 Hz blink proves pixel clock running, reset
+    // released, and frames completing (sof pulses crossing to 50 MHz).
     assign led_o[0]   = cfg_done;
     assign led_o[1]   = cfg_error;
     assign led_o[2]   = pll_locked;
-    assign led_o[3]   = hdmi_tx_vs;
+    assign led_o[3]   = led_alive;
     assign led_o[7:4] = '0;
 
+    // Frame-rate blinker. sof toggles a flop in the pixel domain; a toggle
+    // pair is the metastability-tolerant way to cross an event to a faster
+    // clock domain: sync the toggle with two flops, edge-detect on the
+    // synchronized copies. 60 frames/s, every 30th edge re-toggles, so the
+    // LED inverts at ~1 Hz.
+    logic pix_alive_tgl;
+    always_ff @(posedge clk_pix or negedge pix_rst_n) begin
+        if (!pix_rst_n)        pix_alive_tgl <= 1'b0;
+        else if (apu_sof)      pix_alive_tgl <= ~pix_alive_tgl;
+    end
+
+    (* syncthreads = "true" *) logic [1:0] tgl_sync;
+    logic [4:0] alive_div;
+    logic led_alive;
+    always_ff @(posedge clk_50m_i or negedge rst_50m_n) begin
+        if (!rst_50m_n) begin
+            tgl_sync   <= '0;
+            alive_div  <= '0;
+            led_alive  <= 1'b0;
+        end else begin
+            tgl_sync <= {tgl_sync[0], pix_alive_tgl};
+            if (tgl_sync[1] ^ tgl_sync[0]) begin
+                if (alive_div == 5'd29) begin
+                    alive_div <= '0;
+                    led_alive <= ~led_alive;
+                end else begin
+                    alive_div <= alive_div + 1'b1;
+                end
+            end
+        end
+    end
+
     apu_pkg::rgb332_t apu_rgb;
-    logic _unused_sof, _unused_sol;
+    logic apu_sof;
+    logic _unused_sol;
 
     apu_top u_apu (
         .clk_pix_i (clk_pix),
         .rst_n_i   (pix_rst_n),
         .hsync_o   (hdmi_tx_hs),
         .vsync_o   (hdmi_tx_vs),
-        .sof_o     (_unused_sof),
+        .sof_o     (apu_sof),
         .sol_o     (_unused_sol),
         .de_o      (hdmi_tx_de),
         .rgb_o     (apu_rgb)
     );
 
-    // Style 1 bus pinout: replicate upper bits to fill full 8-bit dynamic range
+    // ADV7513 input pin map per Programming Guide Table 16 (RGB 4:4:4,
+    // Input ID 0): D[23:16]=R, D[15:8]=G, D[7:0]=B. Bit-replicate RGB332
+    // to fill each 8-bit channel's full range.
     assign hdmi_tx_d[23:16] = {apu_rgb[7:5], apu_rgb[7:5], apu_rgb[7:6]};
     assign hdmi_tx_d[15:8]  = {apu_rgb[4:2], apu_rgb[4:2], apu_rgb[4:3]};
     assign hdmi_tx_d[7:0]   = {4{apu_rgb[1:0]}};
 
-    logic _unused_ok = &{1'b0, btn_n_i[1], _unused_sof, _unused_sol};
+    logic _unused_ok = &{1'b0, btn_n_i[1], _unused_sol};
 
 endmodule
