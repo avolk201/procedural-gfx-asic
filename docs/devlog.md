@@ -154,3 +154,34 @@ the source is the manual, not memory. The cheapest diff against the manual
 is always the one done before the hardware arrives; the same file flashed on
 a real board would have driven pixel clock onto a data pin and produced a
 black screen with no obvious cause.
+
+## B14: walker tb passed 7/7 on a ROM that cannot work on hardware
+
+2026-09-23. rtl/adv7513_config.sv, rtl/de10nano_top.sv. Status: FIXED.
+
+Symptom: none. Simulation stayed green throughout. Found by transcribing
+the ROM against ADV7513 Programming Guide Rev B the way the qsf was
+transcribed against Table 3-13 (B13).
+
+Findings:
+- 0x41 written as 0x10: only bit [6] is documented (power up); bit 4 was
+  cargo cult. Now 0x00.
+- 0xAF written as 0x04: bit [1]=0 is the DVI select and was correct, bit 2
+  has no documented purpose anywhere in the guide. Now 0x00.
+- 0x16 comment claimed "Style 1 pinout". Table 16: for RGB 4:4:4 the Input
+  Style bits are don't-care; the pin map comes from the table directly.
+  Value harmless, comment lied. Rewritten.
+- 0x15 comment claimed "rising edge clock", unsupported. Rewritten.
+- POR counter: Programming Guide 4.1 requires 200 ms before first I2C
+  contact; the POR was 0.65 ms. First attempt at fixing it widened the
+  counter declaration but left both index uses at bit [15]: a no-op, caught
+  by grep on the symbol (the partial-refactor bug class, my own, this week).
+  Counter now completes at 2^24 = 335 ms.
+- The 8 fixed trim registers all match Table 14 bit-for-bit, and the
+  ADV7511-era 0xC0 bank-select folklore does not apply to this part.
+
+Lesson: protocol-verified is not content-verified. The tb proves the
+controller puts the ROM on the wire with correct framing; it is blind, by
+design, to whether the ROM is worth putting on the wire. Data entries are
+claims about a $2 chip's datasheet, and like every other claim here they
+need a citation or a diff against the spec table. The audit is the test.

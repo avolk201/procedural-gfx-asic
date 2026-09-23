@@ -32,9 +32,16 @@ can be traced to a page.
   drafted locally, untracked until verified against this manual before
   the first Quartus run).
 
-## Analog Devices ADV7513 datasheet
-- Where: analog.com, ADV7513 product page
-- Revision / accessed: (fill in)
-- Relied on: I2C device address (0x39), power-up register sequence for
-  640x480 RGB input, register map for the planned config walker.
-- Used by: tb constants (DEV_ADDR_OK), future rtl/adv7513_config.sv.
+## Analog Devices ADV7513 Programming Guide + Hardware User's Guide
+- Where: analog.com ADV7513 product page; PDFs kept in docs/specs/ (local)
+- Revision / accessed: Programming Guide Rev B, Hardware User's Guide Rev 0;
+  accessed 2026-09-23
+- Relied on: sec 3 Quick Start + Table 14 (fixed registers after power-up),
+  Table 16 (RGB 4:4:4 pin map: D[23:16]=R), Table 4 (HDMI/DVI select),
+  sec 4.1 (200 ms wait after supplies; PD/AD strap selects 0x72/0x7A),
+  sec 4.7 (power down bit 0x41[6]).
+- Used by: rtl/adv7513_config.sv ROM (per-entry citations) and its tb golden
+  table, POR length in rtl/de10nano_top.sv, tb constants (DEV_ADDR_OK).
+- OPEN: PD/AD strap on the DE10-Nano itself; needs the board schematic (the
+  manual PDF text does not cover it). Until checked, 0x39 is expected, not
+  proven. If pulled high the address is 0x3D and every write NACKs.
