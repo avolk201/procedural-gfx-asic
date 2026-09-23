@@ -4,7 +4,6 @@ RTL = rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv
 TB  = tb/sim_main.cpp
 OUT = sim_apu_top
 
-# Default target: build and run simulation
 sim: $(RTL) $(TB)
 	@mkdir -p sim
 	verilator --cc --exe --build -Wall --top-module apu_top $(RTL) $(TB) -o $(OUT)

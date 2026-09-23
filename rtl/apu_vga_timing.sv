@@ -18,7 +18,7 @@ module apu_vga_timing (
 	logic       sof_next;
 	logic       sol_next;
 
-    // Sync region boundaries (derived from package constants)
+    // Sync region boundaries
 	localparam int unsigned H_SYNC_START = apu_pkg::ACTIVE_W + apu_pkg::H_FP;
 	localparam int unsigned H_SYNC_END   = H_SYNC_START + apu_pkg::HSYNC_WIDTH;
 	localparam int unsigned V_SYNC_START = apu_pkg::ACTIVE_H + apu_pkg::V_FP;

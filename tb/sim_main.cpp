@@ -81,11 +81,9 @@ int main(int argc, char **argv) {
         // one 640x480 frame under its header.
         if (de_o && sof_count == 1) {
             uint8_t rgb = tb->rgb_o;
-            uint8_t r3 = (rgb >> 5) & 0x7;   // bits [7:5]
-            uint8_t g3 = (rgb >> 2) & 0x7;   // bits [4:2]
-            uint8_t b2 =  rgb       & 0x3;   // bits [1:0]
-
-            // Expand to 8 bits/channel via bit replication
+            uint8_t r3 = (rgb >> 5) & 0x7;
+            uint8_t g3 = (rgb >> 2) & 0x7;
+            uint8_t b2 =  rgb       & 0x3;
             uint8_t r8 = (r3 << 5) | (r3 << 2) | (r3 >> 1);
             uint8_t g8 = (g3 << 5) | (g3 << 2) | (g3 >> 1);
             uint8_t b8 = (b2 << 6) | (b2 << 4) | (b2 << 2) | b2;
