@@ -25,9 +25,10 @@ module adv7513_config (
     localparam int unsigned NUM_REGS = 13;
 
     // 640x480 RGB 4:4:4 in DVI mode. DVI bypasses infoframes and audio packets.
+    // Sources: PG = ADV7513 Programming Guide Rev B.
     localparam config_entry_t ROM [NUM_REGS] = '{
-        '{8'h41, 8'h10}, // Power up analog core & TMDS transmitters
-        // Required ADI fixed trim writes (Programming Guide sec 3.1)
+        '{8'h41, 8'h00}, // Power up: 0x41[6]=0, other bits documented 0 (PG 4.7)
+        // Fixed registers that must be set after power-up (PG Table 14, sec 4.2.9)
         '{8'h98, 8'h03},
         '{8'h9A, 8'hE0},
         '{8'h9C, 8'h30},
@@ -36,10 +37,15 @@ module adv7513_config (
         '{8'hA3, 8'hA4},
         '{8'hE0, 8'hD0},
         '{8'hF9, 8'h00},
-        '{8'h15, 8'h00}, // 24-bit RGB 4:4:4, rising edge clock
-        '{8'h16, 8'h00}, // Style 1 pinout (D[23:16]=R, D[15:8]=G, D[7:0]=B)
-        '{8'h17, 8'h00}, // 4:3, bypass internal DE generation
-        '{8'hAF, 8'h04}  // DVI mode (bit 1 = 0)
+        '{8'h15, 8'h00}, // Input ID 0: RGB 4:4:4, separate syncs (PG Table 16).
+                         // [7:4] is the I2S sampling-frequency field; 0 is fine,
+                         // audio is not enabled in Phase 2.
+        '{8'h16, 8'h00}, // RGB 4:4:4: Input Style bits are don't-care (PG Table 16
+                         // defines the pin map directly: D[23:16]=R, D[15:8]=G,
+                         // D[7:0]=B). Only 4:2:2 formats use the style field.
+        '{8'h17, 8'h00}, // Aspect 4:3 (PG 4.3.3); DE generator disabled, so the
+                         // externally supplied DE passes through (PG 0x17[0]).
+        '{8'hAF, 8'h00}  // DVI mode: 0xAF[1]=0 (PG Table 4)
     };
 
     typedef enum logic [1:0] {
@@ -52,7 +58,10 @@ module adv7513_config (
     fsm_state_t state;
     logic [3:0] rom_idx;
 
-    assign dev_addr_o = 7'h39; // DE10-Nano ties ADV7513 PD/AD pin to GND
+    // PD/AD low at power-up latches the 8-bit address 0x72, i.e. 7-bit 0x39
+    // (HUG 6.1.5). The DE10-Nano PD/AD strap still needs confirming against
+    // the board schematic; if pulled high the address is 0x3D instead.
+    assign dev_addr_o = 7'h39;
     assign reg_addr_o = ROM[rom_idx].addr;
     assign data_o     = ROM[rom_idx].data;
 

@@ -15,9 +15,11 @@ module de10nano_top (
     inout  wire         hdmi_i2c_sda
 );
 
-    // POR: holds reset low for ~1.3ms (2^15 clocks at 50MHz) after power-up
+    // POR: ADV7513 Programming Guide (Rev B) 4.1 requires waiting 200 ms after
+    // supplies are stable before I2C, so the ADV7513 can latch its PD/AD address
+    // strap. Hold reset for 2^24 cycles = 335 ms at 50 MHz.
     /* verilator lint_off SYNCASYNCNET */
-    logic [15:0] rst_cnt;
+    logic [24:0] rst_cnt;
     /* verilator lint_on SYNCASYNCNET */
     logic sys_rst_n;
     logic rst_50m_n;
@@ -25,11 +27,11 @@ module de10nano_top (
     always_ff @(posedge clk_50m_i or negedge btn_n_i[0]) begin
         if (!btn_n_i[0]) begin
             rst_cnt <= '0;
-        end else if (!rst_cnt[15]) begin
+        end else if (!rst_cnt[24]) begin
             rst_cnt <= rst_cnt + 1'b1;
         end
     end
-    assign sys_rst_n = rst_cnt[15];
+    assign sys_rst_n = rst_cnt[24];
 
     sync_reset u_sync_rst (
         .clk_i      (clk_50m_i),
