@@ -23,7 +23,7 @@ module pll_25m (
 `else
     // Hardware PLL instance for Cyclone V (Quartus synthesis)
     altera_pll #(
-        .fractional_vco_multiplier("false"),
+        .fractional_vco_multiplier("true"),
         .reference_clock_frequency("50.0 MHz"),
         .operation_mode("direct"),
         .number_of_clocks(1),
