@@ -12,6 +12,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/i2c_controller.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/adv7513_config.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/pll_25m.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sync_reset.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/de10nano_top.sv
 
 # Timing and pin constraints
