@@ -4,9 +4,10 @@ How this repo proves its claims. Everything here is reproducible with make.
 
 ## Scope and current stance
 
-Everything is simulated in Verilator 5.050 on my M2 MacBook. Nothing has run
-on real hardware yet; the DE10-Nano arrives around 25 Sep and board bring-up
-follows.
+Everything is simulated in Verilator 5.050 on my M2 MacBook. Synthesis and
+flashing run on a Bazzite box with Quartus Prime Standard 25.1 (Pro does not
+support Cyclone V). First bring-up happened 2026-09-23: colorbars on a real
+monitor, logged in docs/devlog.md along with the flash commands.
 
 Constants and constraints in the code trace back to the specs listed in
 docs/references.md. I can't include the PDFs themselves (copyright), but if
@@ -47,6 +48,7 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | apu_top via colorbars | VGA timing + pixel pipeline | `make sim` | HSync 96 px, VSync 2 lines (measured while low), frame = 420,000 cycles, one-frame PPM capture = 307,200 px |
 | i2c_controller, closed loop vs C++ target model | full I2C write protocol | `make sim_i2c` (`-v` = bus trace) | 21 checks over T1/T2: busy latency <= CLK_DIV+1, hold-until-busy, one START before first data rise, 27 data rises, wire bytes {72,41,00} and {70,41,00}, ACK levels, one STOP, done width measured 250, ack_err sticky in T2; ~14,998 cycles/transaction |
 | all RTL | zero-warning lint gate | `make lint`, `make lint_i2c` | runs before anything else |
+| de10nano_top on DE10-Nano | first hardware bring-up | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor |
 
 ## Method
 
@@ -72,10 +74,13 @@ reasoning behind each.
 
 - No four-state simulation. X-propagation and uninitialized-register classes
   are untested; an Icarus tier may cover this later.
-- No synthesis or timing evidence. Quartus has not run; fmax at 25.175 MHz is
-  a hope, not a number.
-- constraints/de10nano_pinout.qsf is not yet verified pin-by-pin against the
-  Terasic manual.
+- Timing evidence exists (Quartus 25.1, fitter meets the pixel clock) but the
+  design is not fully constrained: the pixel-to-50 MHz toggle synchronizer
+  has no false-path, so STA reports one benign setup failure (B15). Closing
+  that is the next constraint commit.
+- The pinout is now verified by hardware, not the manual: real video through
+  every HDMI pin, 2026-09-23. The hdmi_tx_int assignment still references a
+  port that does not exist in the design.
 - No coverage metric beyond this inventory.
 - No formal methods. The I2C contract is enforced by simulation only.
 

@@ -185,3 +185,80 @@ controller puts the ROM on the wire with correct framing; it is blind, by
 design, to whether the ROM is worth putting on the wire. Data entries are
 claims about a $2 chip's datasheet, and like every other claim here they
 need a citation or a diff against the spec table. The audit is the test.
+
+## Bring-up: 2026-09-23 (first hardware)
+
+Colorbars on a real monitor at 21:50, one word away from the committed
+design (B15). Night log, because half the failures were the toolchain and
+not the RTL:
+
+- Quartus Prime Pro does not support Cyclone V. The family is simply
+  absent from the device picker. Standard Edition 25.1 works, no license.
+- The B8 landmine fired exactly the way B8 said it would: sync_reset.sv
+  missing from the qsf, caught before the first compile (e6d1b63).
+- Host is Bazzite (Fedora Atomic). Quartus into $HOME, udev rule on vendor
+  09fb, done. One self-inflicted detour: exporting the Quartus PATH
+  without the trailing :$PATH wipes /usr/bin from the shell, and the
+  symptom is "bash: sed: command not found" in a terminal that looks
+  perfectly healthy. hash -r after fixing PATH; bash caches lookups.
+- The Nano's Blaster enumerates as 09fb:6010 "Altera DE-SoC", and
+  quartus_pgm names the cable "DE-SoC", not "USB-Blaster II".
+- JTAG chain is SOCVHPS at position 1, FPGA at position 2. From the CLI,
+  targeting the fabric needs the @2 suffix:
+  quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"
+  A hand-written .cdf was ignored entirely; @2 is the idiom.
+- .sof is volatile. Unplugging wipes it, and an unconfigured Nano
+  ghost-glows all eight user LEDs, which reads as "something is on" if
+  you don't know what the blank state looks like.
+- The LED dashboard earned its pins. The board's user LEDs are unlabeled,
+  so identity came from timing instead: lock asserts within ms of KEY0
+  release, done/error after the 335 ms POR. That is what localized the
+  failure to the PLL without a scope.
+- Proven by hardware, no longer by simulation alone: every HDMI pin in
+  Table 3-13 (real video through all of them), the I2C pins (the real
+  ADV7513 ACKed all 13 writes), the RGB332-to-24-bit channel map, the POR
+  length. The TV took 640x480 without complaint.
+- Still open: the toggle-sync false path (B15), the hdmi_tx_int pin
+  assignment with no matching port, four-state sim.
+
+## B15: PLL never locks; STA does not check VCO legality
+
+2026-09-23. rtl/pll_25m.sv. Status: FIXED (a0dd504).
+
+Observed: first flash runs, LED0 (cfg_done) lights ~0.4 s after KEY0
+release, but no lock LED, no blink, no video.
+
+Initial suspicion: the -7.255 ns setup failure on clk_50m from the first
+compile. A 7 ns miss looks like a real bug in the 50 MHz domain. Wrong
+turn: worst slack and End Point TNS are equal, so exactly one endpoint
+fails. The only single pixel-to-50 MHz path is pix_alive_tgl into
+tgl_sync[0], a toggle synchronizer input that is meant to be false-pathed.
+Benign.
+
+Second wrong turn: blamed ADV7513 power-up (cfg_error, HPD). Unplugged the
+HDMI cable and re-ran; the same LED lit at the same delay. The test could
+not discriminate: the chip's main rails do not drop when you unplug the
+cable, so the config completes either way. The lit LED was cfg_done all
+along; the real chip had ACKed everything.
+
+Fault: nothing lit instantly on KEY0 release, so pll_locked never
+asserted. The compile log had already printed the reason and I had not
+read it. The SDC derivation lines show the VCO: 50 MHz * 1839/64 =
+1436.7 MHz, then /57 to the 25.2 MHz output. The Cyclone V general PLL VCO
+tops out at 1300 MHz. The silicon cannot lock to an out-of-range VCO.
+derive_pll_clocks does the arithmetic and reports a clean generated clock
+either way; TimeQuest never checks VCO legality. Verilator can't see it
+either: the behavioral branch in pll_25m.sv ties locked high by
+construction.
+
+Fix: fractional_vco_multiplier("true") in the hand-instantiated
+altera_pll (a0dd504). Quartus re-solves the divider set with a legal VCO.
+Lock LED lights instantly, blink at ~1 Hz, colorbars on the monitor.
+Verified on hardware before committing.
+
+Lesson: simulation-clean is not silicon-legal, and B14's rule extends to
+megafunction parameters. Every value typed into an altera_pll instance is
+a claim about the part, and no harness in this repo can check it. The
+Quartus log can: the create_generated_clock lines print the derived VCO.
+Read them after every PLL edit, same duty as diffing the qsf against
+Table 3-13.
