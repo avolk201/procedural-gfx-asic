@@ -19,6 +19,15 @@ sim_config: rtl/adv7513_config.sv rtl/i2c_controller.sv tb/tb_adv7513_config.sv 
 	verilator --cc --exe --build -Wall --top-module tb_adv7513_config tb/tb_adv7513_config.sv rtl/adv7513_config.sv rtl/i2c_controller.sv tb/sim_adv7513_config.cpp -o sim_adv7513_config
 	./obj_dir/sim_adv7513_config
 
+# Look check for the plasma scene: one frame to sim/plasma_frame.ppm for
+# eyeballing against anim/render.py's output. SCENE is overridden only here;
+# the board build picks PLASMA in de10nano_top and the default sim stays
+# colorbars, so no regression path depends on this target's result.
+sim_plasma: $(RTL) tb/sim_plasma.cpp
+	@mkdir -p sim
+	verilator --cc --exe --build -Wall --top-module apu_top -GSCENE=1 $(RTL) tb/sim_plasma.cpp -o sim_plasma
+	./obj_dir/sim_plasma
+
 # sim/cordic_golden.hex is generated from the model, so a stale file can never
 # cross-check the RTL: make rebuilds it whenever cordic_golden.py changes.
 sim/cordic_golden.hex: tb/cordic_golden.py
@@ -52,4 +61,4 @@ clean:
 
 # sim/ and obj_dir/ are real directories, so the run targets must be phony
 # or make treats them as up to date on a rerun
-.PHONY: sim sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic clean
+.PHONY: sim sim_plasma sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic clean
