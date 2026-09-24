@@ -41,6 +41,14 @@ and the I2C timing come straight out of those documents, not out of thin air.
    (bug B4) fails 9 of 21 checks with nonzero exit. You don't trust a teacher
    until you've seen them grade a wrong answer.
 
+5. Name the observable difference before touching the board.
+   If a test cannot come out wrong, it is not a test. B15: I unplugged the
+   HDMI cable to check the ADV7513, re-ran, and saw the same LED at the same
+   delay. The chip's rails do not drop when the cable comes out, so the config
+   walker finishes either way. Before you touch the board, write down what
+   changes if you are wrong. The monitor is not the only instrument: LED2
+   failing to light on KEY0 release is what localized B15 (docs/deploy.md).
+
 ## Inventory
 
 | Target | Proves | Run | Key numbers |
@@ -48,7 +56,7 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | apu_top via colorbars | VGA timing + pixel pipeline | `make sim` | HSync 96 px, VSync 2 lines (measured while low), frame = 420,000 cycles, one-frame PPM capture = 307,200 px |
 | i2c_controller, closed loop vs C++ target model | full I2C write protocol | `make sim_i2c` (`-v` = bus trace) | 21 checks over T1/T2: busy latency <= CLK_DIV+1, hold-until-busy, one START before first data rise, 27 data rises, wire bytes {72,41,00} and {70,41,00}, ACK levels, one STOP, done width measured 250, ack_err sticky in T2; ~14,998 cycles/transaction |
 | all RTL | zero-warning lint gate | `make lint`, `make lint_i2c` | runs before anything else |
-| de10nano_top on DE10-Nano | first hardware bring-up | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor |
+| de10nano_top on DE10-Nano | first hardware bring-up | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16) |
 
 ## Method
 
@@ -74,9 +82,14 @@ reasoning behind each.
 
 - No four-state simulation. X-propagation and uninitialized-register classes
   are untested; an Icarus tier may cover this later.
-- Timing evidence exists (Quartus 25.1, fitter meets the pixel clock). The
-  pixel/50 MHz crossings are declared asynchronous in timing.sdc (B15);
-  the STA-clean re-run on the Bazzite box is still owed.
+- Timing closed and measured (B16): Quartus 25.1, Slow 1100mV 100C, worst
+  slack setup +14.875 / hold +0.163 / recovery +17.747 / removal +0.358 /
+  min pulse width +1.241, End Point TNS 0.000 on both clocks. The price:
+  set_clock_groups -asynchronous ignores recovery and removal too, so nothing
+  times the 50 MHz to pixel reset assertion (sys_rst_n && pll_locked into
+  u_sync_rst_pix, de10nano_top.sv:108). sync_reset aligns deassertion only,
+  assertion crosses raw. Justified by construction, not STA. A pixel-domain
+  reset source would make it measurable again.
 - The pinout is now verified by hardware, not the manual: real video through
   every HDMI pin, 2026-09-23. The dead hdmi_tx_int assignment is gone;
   PIN_AF11 (ADV7513 INT) stays unassigned on purpose.

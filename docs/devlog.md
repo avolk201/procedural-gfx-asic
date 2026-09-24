@@ -262,3 +262,64 @@ a claim about the part, and no harness in this repo can check it. The
 Quartus log can: the create_generated_clock lines print the derived VCO.
 Read them after every PLL edit, same duty as diffing the qsf against
 Table 3-13.
+
+## B16: Two false reads in the STA re-run, and what set_clock_groups hides
+
+2026-09-23. constraints/timing.sdc. Status: FIXED (8911f72), on hardware
+2026-09-24.
+
+Observed: B15's fix looked verified twice before it was. Both times the
+evidence could not have failed.
+
+Wrong turn one: grepped the STA report for an 85C corner. The -I7 part reports
+Slow and Fast models at 100C and -40C, no 85C model. The grep printed nothing,
+and nothing looks exactly like a clean report.
+
+Wrong turn two: read output_files/de10nano_top.sta.rpt and reported slack
+without checking which compile wrote it. A stale sta.rpt is indistinguishable
+from a fresh one by content. Plausible numbers, wrong build.
+
+Fault: both were me taking a result that could not be wrong as one that had
+passed. Same shape as B2.
+
+Fix, now procedure: rm the sta.rpt before compiling, check exit code, check
+the report mtime, then read numbers. Grep the corners the part reports, not
+the one I remembered from another family.
+
+The real cost is what the constraint hides. set_clock_groups -asynchronous
+ignores recovery and removal between the groups, not only setup and hold. So
+the -5.249 ns cross-domain recovery failure vanished with no targeted
+set_false_path. And nothing now times the 50 MHz to pixel reset assertion:
+sys_rst_n && pll_locked into u_sync_rst_pix (de10nano_top.sv:108). sync_reset
+aligns deassertion only, so assertion crosses raw. Justified by construction,
+not STA. A pixel-domain reset source would make it measurable again.
+
+One flow, provenance pinned: started 22:51 from b2eb094 plus the constraints
+patch; fit.rpt, sta.rpt and the .sof all written 23:00, sta.rpt 197416 bytes,
+so the slack below and the flashed .sof are the same run. Exit 0, no Critical
+Warning, no Error lines. Worst-case slack, Slow 1100mV 100C:
+
+    before (332148)     after
+    -12.564  setup      +14.875
+     -0.070  hold        +0.163
+     -5.249  recovery   +17.747
+     +0.453  removal     +0.358
+     +1.241  min pw      +1.241
+
+  End Point TNS 0.000 on both clocks. Setup per clock: clk_50m +14.875,
+  divclk +33.326. Recovery per clock: clk_50m +17.747, divclk +37.864. Hold
+  was failing as well as setup, which the headline setup slack hides.
+
+Flash 23:09:49: device index 2, JTAG ID 0x02D020DD, .sof checksum 0x00B31381,
+0 errors, 0 warnings.
+
+Board 2026-09-24, after KEY0 press and release: LED2 instant, LED1 off, LED3
+about 1 Hz, LED0 after a delay I eyeballed at roughly half a second, not
+timed. The design figure is 339 ms: the 2^24-cycle POR (de10nano_top.sv:20,
+335.5 ms at 50 MHz) plus 13 writes at 14,998 cycles each (3.9 ms). An untimed
+eye over-reads short intervals, so I record both numbers and claim neither a
+stopwatch match nor a discrepancy. Eight colorbars at 640x480 on the monitor.
+
+Lesson: deleting a failing path is not the same as fixing one. The difference
+is whether anything still measures the path. Check the mtime before the
+numbers. Same discipline as rule 5, pointed at a file instead of a board.
