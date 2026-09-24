@@ -1,4 +1,4 @@
-# rv32-apu
+# procedural-gfx-asic
 
 [![CI](https://img.shields.io/github/actions/workflow/status/avolk201/rv32-apu/ci.yml?branch=main)](https://github.com/avolk201/rv32-apu/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
