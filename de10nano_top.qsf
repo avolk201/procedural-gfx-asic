@@ -7,7 +7,9 @@ set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
 # Source files
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_vga_timing.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_cordic.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_colorbars.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_plasma.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/i2c_controller.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/adv7513_config.sv

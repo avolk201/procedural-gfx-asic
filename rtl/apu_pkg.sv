@@ -12,6 +12,8 @@ package apu_pkg;
     localparam int unsigned V_FP     = 10;
     localparam int unsigned VSYNC_WIDTH = 2;
     localparam int unsigned V_BP     = 33;
+    localparam int unsigned SCENE_COLORBARS = 0;
+    localparam int unsigned SCENE_PLASMA = 1;
 
     localparam int unsigned H_TOTAL = ACTIVE_W + H_FP + HSYNC_WIDTH + H_BP;
     localparam int unsigned V_TOTAL = ACTIVE_H + V_FP + VSYNC_WIDTH + V_BP;

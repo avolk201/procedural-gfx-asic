@@ -1,6 +1,6 @@
 # Makefile for rv32-apu simulation
 
-RTL = rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv
+RTL = rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv
 TB  = tb/sim_main.cpp
 OUT = sim_apu_top
 
@@ -31,13 +31,13 @@ sim_cordic: rtl/apu_cordic.sv tb/sim_cordic.cpp sim/cordic_golden.hex
 
 # Lint only (no C++ build)
 lint: $(RTL)
-	verilator --lint-only -Wall $(RTL)
+	verilator --lint-only -Wall --top-module apu_top $(RTL)
 
 lint_i2c: rtl/i2c_controller.sv
 	verilator --lint-only -Wall rtl/i2c_controller.sv
 
-lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
-	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_colorbars.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv rtl/sync_reset.sv
+lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
+	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv rtl/sync_reset.sv
 
 # apu_cordic is standalone (not yet instantiated in de10nano_top), so it gets
 # its own lint rather than being folded into lint_top, whose top is de10nano_top.

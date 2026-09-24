@@ -154,7 +154,11 @@ module de10nano_top (
     logic apu_sof;
     logic _unused_sol;
 
-    apu_top u_apu (
+    // SCENE_PLASMA drives the HDMI from the CORDIC. Flip to SCENE_COLORBARS
+    // (one token) to restore the known-good bring-up pattern.
+    apu_top #(
+        .SCENE (apu_pkg::SCENE_PLASMA)
+    ) u_apu (
         .clk_pix_i (clk_pix),
         .rst_n_i   (pix_rst_n),
         .hsync_o   (hdmi_tx_hs),
