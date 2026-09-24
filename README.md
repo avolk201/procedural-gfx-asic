@@ -1,6 +1,6 @@
 # procedural-gfx-asic
 
-[![CI](https://img.shields.io/github/actions/workflow/status/avolk201/rv32-apu/ci.yml?branch=main)](https://github.com/avolk201/rv32-apu/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/avolk201/procedural-gfx-asic/ci.yml?branch=main)](https://github.com/avolk201/procedural-gfx-asic/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Framebuffer-less procedural graphics accelerator for an RV32IMAC SoC.

@@ -1,4 +1,4 @@
-# Makefile for rv32-apu simulation
+# Makefile for procedural-gfx-asic simulation
 
 RTL = rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv
 TB  = tb/sim_main.cpp
