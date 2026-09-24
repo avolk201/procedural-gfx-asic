@@ -351,9 +351,18 @@ Consequences:
   must raise the count (break a terrace into more codes) and must leave
   colorbars byte-identical, since they bypass the path. A dither that only
   "looks nicer" is not verified.
-- Ordering: lands after the plasma motion is settled (boiling, d557f59) so the
-  dither applies to final content, and before the GIF milestone so the capture
-  shows the smoothed output.
+- Ordering: moot; see Evaluation (dither not adopted).
 
-Evidence: none yet; this entry is the contract. A verification row goes to
-docs/verification.md when the dither tb exists.
+Evaluation (2026-09-24): ordered Bayer dither was implemented twice against the
+hue-wheel plasma and rejected. At RGB332 (3/3/2) the hue wheel uses ~28 of the
+256 codes; dithering turned hard terraces into visible contour bands (measured:
+baseline distinct=28 longest-run=514px; dithered distinct=29 longest-run=380px,
+i.e. terraces survived and only shifted). The banding is a color-depth limit,
+not a quantization-edge problem dither can hide at this depth. Decision: no
+dither for computed-color scenes at 3-bit; keep the clean posterized output.
+Revisit only if color depth increases or a value-modulation mapping (more codes
+via brightness) is adopted instead.
+
+Evidence: the before/after distinct/longest-run measurements above, from
+make sim_plasma frame captures. docs/verification.md records the accepted
+banding as a known gap.

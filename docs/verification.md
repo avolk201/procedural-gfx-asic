@@ -95,9 +95,9 @@ reasoning behind each.
 - The pinout is now verified by hardware, not the manual: real video through
   every HDMI pin, 2026-09-23. The dead hdmi_tx_int assignment is gone;
   PIN_AF11 (ADV7513 INT) stays unassigned on purpose.
-- Computed-color scenes poster at RGB332's 3/3/2 quantization; the plasma is
-  not yet dithered. Contract in docs/decisions.md D17, landing before the GIF
-  milestone. Colorbars are a fixed palette and are unaffected.
+- Computed-color scenes are not dithered. Ordered Bayer dither was evaluated
+  against the hue-wheel plasma and rejected as a color-depth limit (D17);
+  banding at RGB332 is accepted and measured (distinct=28, longest-run=514px).
 - No coverage metric beyond this inventory.
 - No formal methods. The I2C contract is enforced by simulation only.
 
