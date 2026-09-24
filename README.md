@@ -1,12 +1,29 @@
 # rv32-apu
 
+[![CI](https://img.shields.io/github/actions/workflow/status/avolk201/rv32-apu/ci.yml?branch=main)](https://github.com/avolk201/rv32-apu/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Framebuffer-less procedural graphics accelerator for an RV32IMAC SoC.
 Pixels are computed during active scanout instead of stored in SRAM.
 
 Status, 2026-09-23: phases 1 and 2 are done. VGA timing, SMPTE colorbars
 and the ADV7513 HDMI config walker are verified in Verilator, and the whole
-chain has run on real hardware: colorbars on a monitor off a DE10-Nano.
-There is no RV32 core in this repo yet; that is phase 3 of the plan below.
+chain has run on real hardware: colorbars on a monitor off a DE10-Nano. The
+math core, a pipelined CORDIC, is in and cross-checked against a Python golden
+model for all 65536 phases; it is not yet wired into the pixel pipeline. There
+is still no RV32 core.
+
+Toolchain: Verilator 5.050 for simulation (`make sim*`); Quartus Prime Standard
+25.1 for synthesis, on Linux (Quartus Pro does not support Cyclone V). Board:
+Terasic DE10-Nano, Cyclone V SoC.
+
+## How to read this repo
+
+Start with the status line and the two images below: that is the whole result,
+verified in simulation and on the board. For the verification detail, read
+[docs/verification.md](docs/verification.md); it lists what each make target
+checks and the rules the harnesses follow. For how bugs are found and closed,
+read [docs/devlog.md](docs/devlog.md), entries B13 through B16.
 
 <img src="docs/frame.png" alt="Eight vertical SMPTE colorbars, white through black, rendered at 640x480" width="640">
 
@@ -25,13 +42,16 @@ render above.*
     make sim         pixel pipeline, measured timing, one-frame capture
     make sim_i2c     I2C controller against a C++ ADV7513 model, 21 checks
     make sim_config  config walker closed loop, 7 checks
+    make sim_cordic  pipelined CORDIC vs the golden model, all 65536 phases
 
 Board bring-up, flashing and the LED debug dashboard:
 [docs/deploy.md](docs/deploy.md).
 
 ## Where this is going
 
-1. Math core: pipelined CORDIC against a Python golden model.
+1. Math core: pipelined CORDIC against a Python golden model. Done and
+   cross-checked; the open step is wiring it into the pixel pipeline to drive
+   a sine-based plasma scene.
 2. Real scenes: gradients and plasma, then a DDA raycaster with textures.
 3. The namesake: own RV32 core and assembler, memory-mapped scene registers.
 4. Storage: SPI SD card with a flat container format, the cartridge.
