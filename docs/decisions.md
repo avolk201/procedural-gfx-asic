@@ -307,3 +307,53 @@ processing unit, CPU-directed over the register interface, audio embedded
 in HDMI via the ADV7513 I2S pins already reserved in the qsf. GitHub repo
 takes the name when the remote is created (none exists yet; this repo is
 local-only). README title updated in the same commit as this entry.
+
+## D17: ordered dithering for computed-color scenes, not a global output stage
+
+2026-09-24. Phase 4 rendering. Contract-first: written before the RTL.
+
+Context: the plasma reduces a continuous 25-bit color sum to RGB332 (3/3/2
+bits) by keeping the top bits. Eight levels per channel is coarse enough that
+smooth gradients poster into visible terraces. The board has no framebuffer to
+dither into, so the reduction happens live, per pixel, at scanout.
+
+Options:
+1. Ordered (Bayer) dither: add a fixed threshold from a matrix indexed by the
+   pixel's low x/y bits, before truncating. Stateless, one add, one constant.
+2. Error-diffusion (Floyd-Steinberg): push quantization error to neighbors.
+3. Temporal dither: vary the threshold per frame. Grainy, and it interacts with
+   whatever dithering the panel itself applies on refresh.
+4. One dither stage after the apu_top scene mux, applied to every scene.
+
+Decision: option 1, as a shared primitive that computed-color scenes opt into.
+Not option 4.
+
+Rationale: ordered dither is the only option that fits a framebuffer-less
+scanout. Option 2 needs the not-yet-computed pixels or a line buffer, which is
+the very storage this design exists to avoid. A single apu_pkg function keeps
+one source of truth reused by the plasma now and the gradient/raycaster later;
+that is what "global" should mean here, not an unconditional filter.
+
+The boundary is the palette. Colorbars emit fixed RGB332 codes (0xFF, 0x1C,
+...) that are the known-good bring-up reference and feed the RGB332-to-24-bit
+map in de10nano_top unchanged. Dithering them would speckle solid bars and
+break the reference, so the dither is opt-in at each scene's own output stage.
+The RGB332-to-24-bit bit-replication in de10nano_top is a fixed expansion, not
+a quantization, and is left alone.
+
+Consequences:
+- The dither index must use the pixel the color belongs to. apu_plasma's color
+  comes from the CORDIC, whose result corresponds to x,y fed 18 clocks earlier,
+  so the Bayer lookup needs x,y delayed by the same 18, not the live x_i,y_i.
+  Same alignment trap as de_o; a wrong index shifts the grain by a line edge.
+- The tb measures the effect rather than asserting it: count distinct output
+  levels along a monotonic input gradient before and after dithering. Dithering
+  must raise the count (break a terrace into more codes) and must leave
+  colorbars byte-identical, since they bypass the path. A dither that only
+  "looks nicer" is not verified.
+- Ordering: lands after the plasma motion is settled (boiling, d557f59) so the
+  dither applies to final content, and before the GIF milestone so the capture
+  shows the smoothed output.
+
+Evidence: none yet; this entry is the contract. A verification row goes to
+docs/verification.md when the dither tb exists.
