@@ -30,3 +30,9 @@ jobs:
 
       - name: Run ADV7513 config walker simulation
         run: make sim_config
+
+      - name: Run CORDIC golden model self-checks
+        run: python3 tb/cordic_golden.py
+
+      - name: Run CORDIC RTL cross-check against the model
+        run: make sim_cordic
