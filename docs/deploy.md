@@ -39,9 +39,12 @@ lookups, so run `hash -r` after fixing it.
 
     quartus_sh --flow compile de10nano_top
 
-After any PLL edit, read the create_generated_clock lines in the compile
-log: they print the derived VCO. A VCO outside 600-1300 MHz means the PLL
-will never lock on silicon while every tool reports success (B15).
+After any PLL edit, read the create_generated_clock lines in the compile log and
+confirm the derived output is 25.175 MHz; lock asserted on hardware is the real
+test (B15 shows every tool can report success while silicon never locks). B15
+was an integer-mode VCO at 1437 MHz, above the 600-1300 MHz integer window; the
+shipped PLL is fractional (a0dd504), and that window is not the figure a
+fractional build prints, so do not apply it here.
 
 Output: output_files/de10nano_top.sof. Volatile; a power cycle erases it.
 
@@ -85,8 +88,8 @@ order (lock first, done or error after the 335 ms POR).
   power cycle.
 - LED1 on: ADV7513 NACKed. The monitor was not cabled at power-up, or the
   HPS is fighting the bus. Power cycle with the monitor connected, SD out.
-- LED2 never on: PLL did not lock. Read the derived VCO out of the compile
-  log (B15).
+- LED2 never on: PLL did not lock. Check the derived output frequency in the
+  compile log and the fractional-VCO note under Build (B15).
 - LEDs good, monitor says no signal: the design is fine and the display may
   refuse 640x480@60, a monitor timing rather than a TV one. Try a
   PC monitor before suspecting RTL.
