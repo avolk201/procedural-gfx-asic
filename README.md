@@ -13,9 +13,22 @@ math core, a pipelined CORDIC, is in and cross-checked against a Python golden
 model for all 65536 phases; it is not yet wired into the pixel pipeline. There
 is still no RV32 core.
 
-Toolchain: Verilator 5.050 for simulation (`make sim*`); Quartus Prime Standard
-25.1 for synthesis, on Linux (Quartus Pro does not support Cyclone V). Board:
-Terasic DE10-Nano, Cyclone V SoC.
+Toolchain (what results are reproduced with):
+
+- Verilator 5.050 for every `make sim*` and `make lint*` target. The CI runner
+  uses Ubuntu's apt Verilator, so its exact patch may differ; the numbers quoted
+  in the README and docs are measured on 5.050. The sim flow is Verilator-only:
+  no Icarus Verilog or Yosys step exists in this repo.
+- python3 for the CORDIC golden model (`tb/cordic_golden.py`), which the C++
+  testbench reads as its oracle.
+- Quartus Prime Standard 25.1 for synthesis, Linux or Windows only. Quartus Pro
+  drops the Cyclone V family, so it cannot build this design; Standard needs no
+  license for this part.
+- A Terasic DE10-Nano (Cyclone V SoC, 5CSEBA6U23I7) to run it on hardware.
+  Flashing is optional and covered in [docs/deploy.md](docs/deploy.md).
+
+Reproducing the simulations needs only Verilator and python3: `make sim`,
+`sim_i2c`, `sim_config` and `sim_cordic` all run without Quartus or the board.
 
 ## How to read this repo
 
@@ -50,8 +63,9 @@ Board bring-up, flashing and the LED debug dashboard:
 ## Where this is going
 
 1. Math core: pipelined CORDIC against a Python golden model. Done and
-   cross-checked; the open step is wiring it into the pixel pipeline to drive
-   a sine-based plasma scene.
+   cross-checked ([docs/cordic.md](docs/cordic.md) has the convergence and
+   bit-width argument); the open step is wiring it into the pixel pipeline to
+   drive a sine-based plasma scene.
 2. Real scenes: gradients and plasma, then a DDA raycaster with textures.
 3. The namesake: own RV32 core and assembler, memory-mapped scene registers.
 4. Storage: SPI SD card with a flat container format, the cartridge.
@@ -66,6 +80,7 @@ Design decisions: [docs/decisions.md](docs/decisions.md).
 Bug graveyard: [docs/devlog.md](docs/devlog.md).
 Spec references: [docs/references.md](docs/references.md).
 Verification methodology and harness inventory: [docs/verification.md](docs/verification.md).
+CORDIC math core: [docs/cordic.md](docs/cordic.md).
 Board bring-up and flashing: [docs/deploy.md](docs/deploy.md).
 
 ## License

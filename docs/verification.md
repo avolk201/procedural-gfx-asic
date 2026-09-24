@@ -57,6 +57,8 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | i2c_controller, closed loop vs C++ target model | full I2C write protocol | `make sim_i2c` (`-v` = bus trace) | 21 checks over T1/T2: busy latency <= CLK_DIV+1, hold-until-busy, one START before first data rise, 27 data rises, wire bytes {72,41,00} and {70,41,00}, ACK levels, one STOP, done width measured 250, ack_err sticky in T2; ~14,998 cycles/transaction |
 | all RTL | zero-warning lint gate | `make lint`, `make lint_i2c` | runs before anything else |
 | de10nano_top on DE10-Nano | first hardware bring-up | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16) |
+| apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency measured 18, 1/clk |
+
 
 ## Method
 
