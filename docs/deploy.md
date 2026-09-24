@@ -88,7 +88,7 @@ order (lock first, done or error after the 335 ms POR).
 - LED2 never on: PLL did not lock. Read the derived VCO out of the compile
   log (B15).
 - LEDs good, monitor says no signal: the design is fine and the display may
-  simply refuse 640x480@60, a monitor timing rather than a TV one. Try a
+  refuse 640x480@60, a monitor timing rather than a TV one. Try a
   PC monitor before suspecting RTL.
 - quartus_pgm sees no cable: udev rule, wrong USB port, or charge-only
   cable, in that order of likelihood.

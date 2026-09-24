@@ -64,7 +64,7 @@ Fix: same commit as B4 (67e237b); both faults concern the `bit_cnt` lifecycle. A
 
 2026-09-19. `tb/sim_main.cpp`. Status: FIXED (e3f3409).
 
-Observed: `make sim` prints `VSync lines: 0` every frame. The claim that VSync = 2 lines had never actually been measured.
+Observed: `make sim` prints `VSync lines: 0` every frame. The claim that VSync = 2 lines had never been measured.
 
 Fault: the tb increments `vsync_lines` only at SOF when `vsync` is low. SOF fires at line 0, the start of frame, where `vsync` is high. The counter cannot increment.
 
@@ -192,7 +192,7 @@ Colorbars on a real monitor at 21:50, one word away from the committed
 design (B15). Night log, because half the failures were the toolchain and
 not the RTL:
 
-- Quartus Prime Pro does not support Cyclone V. The family is simply
+- Quartus Prime Pro does not support Cyclone V. The family is
   absent from the device picker. Standard Edition 25.1 works, no license.
 - The B8 landmine fired exactly the way B8 said it would: sync_reset.sv
   missing from the qsf, caught before the first compile (e6d1b63).
@@ -287,7 +287,7 @@ the report mtime, then read numbers. Grep the corners the part reports, not
 the one I remembered from another family.
 
 The real cost is what the constraint hides. set_clock_groups -asynchronous
-ignores recovery and removal between the groups, not only setup and hold. So
+ignores setup, hold, recovery and removal between the groups. So
 the -5.249 ns cross-domain recovery failure vanished with no targeted
 set_false_path. And nothing now times the 50 MHz to pixel reset assertion:
 sys_rst_n && pll_locked into u_sync_rst_pix (de10nano_top.sv:108). sync_reset
@@ -320,6 +320,6 @@ timed. The design figure is 339 ms: the 2^24-cycle POR (de10nano_top.sv:20,
 eye over-reads short intervals, so I record both numbers and claim neither a
 stopwatch match nor a discrepancy. Eight colorbars at 640x480 on the monitor.
 
-Lesson: deleting a failing path is not the same as fixing one. The difference
-is whether anything still measures the path. Check the mtime before the
-numbers. Same discipline as rule 5, pointed at a file instead of a board.
+Lesson: deleting a failing path hides it rather than fixing it. The test of
+the fix is whether anything still measures the path. Check the mtime before
+the numbers, same as rule 5.

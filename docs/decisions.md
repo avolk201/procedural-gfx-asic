@@ -110,7 +110,7 @@ Rules for every harness in the repo, to be collected into docs/verification.md
 
 1. A timeout is a failure, not an exit condition. The tb records why the loop
    ended; watchdog termination prints FAIL and exits nonzero.
-2. Assert positive expectations, not just absence of error flags. Expected
+2. Assert positive expectations, not the absence of error flags. Expected
    SCL rising edges per byte is 9 (8 data + ACK). That count alone catches
    truncated-byte bugs.
 3. Exit code is the interface. make and CI read exit codes, not prose. FAIL

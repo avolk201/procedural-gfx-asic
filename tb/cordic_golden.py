@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """CORDIC golden reference for the phase-3 math core.
 
-Two models, because they answer different questions. cordic_float is
-unbounded precision and exists to show the algorithm converging; it feeds the
-error-vs-iterations sweep. cordic_fixed is bit-exact with the RTL: same
-widths, same truncating shifts, same masking. That one is the oracle the
-testbench scores against, so it models the hardware rather than the maths.
+cordic_float is unbounded precision: it shows the algorithm converging and
+feeds the error-vs-iterations sweep. cordic_fixed is bit-exact with the RTL at
+the same widths, truncating shifts and per-stage masking; it is the oracle the
+testbench scores against, so it models the hardware, not the maths.
 
 Rotation mode, input pre-scaled by 1/K so the output needs no gain multiply.
 Angle input is an unsigned phase in turns, phase/2**16 of a circle, so
@@ -217,7 +216,7 @@ def cordic_fixed(phase):
     return sxt(cos_theta, DATA_WIDTH), sxt(sin_theta, DATA_WIDTH)
 
 
-# ---------------------------------------------------------------- selftest
+# selftest
 
 CHECKS = 0
 FAILS = 0
@@ -339,7 +338,7 @@ def selftest():
     return FAILS
 
 
-# -------------------------------------------------------------------- emit
+# emit
 
 def emit(path):
     """Write the golden hex the C++ tb reads. Signed decimal, not hex: the tb
@@ -360,7 +359,7 @@ def emit(path):
     return 0
 
 
-# ------------------------------------------------------------------- sweep
+# sweep
 
 def sweep():
     """Error vs iteration count, the data behind the roadmap plot."""
