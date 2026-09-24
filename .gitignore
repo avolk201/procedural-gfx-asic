@@ -1,8 +1,10 @@
 sim/
 *.o
 obj_dir/
+__pycache__/
 .DS_Store
 output_files/
 db/
 incremental_db/
 *.qws
+c5_pin_model_dump.txt
