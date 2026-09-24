@@ -53,11 +53,11 @@ module apu_plasma (
     always_comb begin
         case (seg)
             3'd0:    begin r3 = 3'd7;   g3 = q3;     b2 = 2'd0;   end
-            3'd1:    begin r3 = 3'(7-q3); g3 = 3'd7; b2 = 2'd0;   end
+            3'd1:    begin r3 = 3'd7 - q3; g3 = 3'd7;     b2 = 2'd0;   end
             3'd2:    begin r3 = 3'd0;   g3 = 3'd7;   b2 = q2;     end
-            3'd3:    begin r3 = 3'd0;   g3 = 3'(7-q3); b2 = 2'd3; end
+            3'd3:    begin r3 = 3'd0;     g3 = 3'd7 - q3; b2 = 2'd3;   end
             3'd4:    begin r3 = q3;     g3 = 3'd0;   b2 = 2'd3;   end
-            default: begin r3 = 3'd7;   g3 = 3'd0;   b2 = 2'(3-q2); end
+            default: begin r3 = 3'd7;     g3 = 3'd0;     b2 = 2'd3 - q2; end
         endcase
     end
     assign rgb_o = {r3, g3, b2};
