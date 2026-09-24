@@ -1,6 +1,10 @@
 // rtl/apu_plasma.sv
-// Generates a plasma effect in 640x480@60Hz VGA timing
-// Uses a CORDIC to compute sin/cos of a moving phase.
+// Plasma for 640x480@60Hz: ONE shared field F = sin_x + sin_y + sin_z from
+// three non-collinear CORDIC gratings, hue-mapped to RGB. A single field keeps
+// the pattern coherent (it boils as one surface); per-channel grating pairs
+// made it look like three independent slides. Three non-collinear gratings are
+// what makes it boil at all: a sum of an x- and a y-grating is provably a pure
+// translation (a*dx=fx, b*dy=fy always solves), so it can only scroll.
 
 module apu_plasma (
     input  logic             clk_pix_i,
@@ -13,89 +17,90 @@ module apu_plasma (
     output apu_pkg::rgb332_t rgb_o
 );
 
-    logic [15:0] frame_x;
-    logic [15:0] frame_y;
-    logic [15:0] phase_x;
-    logic [15:0] phase_y;
+    // Grating spatial frequencies and per-frame phase drift. Mutually coprime
+    // drift rates; with these vectors the composite is never a translation.
+    localparam logic [15:0] KX = 102, KY = 137, KZ = 110;
+    localparam logic [15:0] DX = 257, DY = 163, DZ = 97;
 
-    logic                    cordic_x_vld;
-    logic signed [23:0]      cordic_x_sin;
-    logic signed [23:0]      cordic_x_cos;
-    logic                    cordic_y_vld;
-    logic signed [23:0]      cordic_y_sin;
-    logic signed [23:0]      cordic_y_cos;
+    logic [15:0] frame_x, frame_y, frame_z;
+    logic [15:0] phase_x, phase_y, phase_z;
+    logic [15:0] sum_xy;
 
-    logic signed [24:0] red_wave;
-    logic signed [24:0] green_wave;
-    logic signed [24:0] blue_wave;
+    logic               cordic_x_vld, cordic_y_vld, cordic_z_vld;
+    logic signed [23:0] cordic_x_sin, cordic_x_cos;
+    logic signed [23:0] cordic_y_sin, cordic_y_cos;
+    logic signed [23:0] cordic_z_sin, cordic_z_cos;
 
-    // wave_to_3/2 keep only the most-significant bits of a 25-bit biased sum;
-    // the discarded low bits are sub-LSB colour detail by design, so the
-    // partial-read warning is waived here (same idiom as the SYNCASYNCNET and
-    // UNUSEDPARAM waivers used elsewhere in this tree).
-    /* verilator lint_off UNUSEDSIGNAL */
-    function automatic logic [2:0] wave_to_3(input logic signed [24:0] wave);
-        logic signed [24:0] biased;
-        begin
-            biased = wave + 25'sd8388608;
-            wave_to_3 = biased[23:21];
-        end
-    endfunction
+    // Shared field. Each sin is Q2.22, so F is within +-3*2**22; the 6-segment
+    // hue wheel below maps that range to a full RGB cycle.
+    logic signed [24:0] F;
+    assign F = $signed(cordic_x_sin) + $signed(cordic_y_sin) + $signed(cordic_z_sin);
 
-    function automatic logic [1:0] wave_to_2(input logic signed [24:0] wave);
-        logic signed [24:0] biased;
-        begin
-            biased = wave + 25'sd8388608;
-            wave_to_2 = biased[23:22];
-        end
-    endfunction
-    /* verilator lint_on UNUSEDSIGNAL */
+    // Integer 6-segment hue wheel. Fn = (F/64 + 3*2**16) in [0, 6*65536], split
+    // into segment index (0..5) and fraction. q3/q2 are the fraction scaled to
+    // 3 and 2 bits. Offsets 0, 1/3, 2/3 of the cycle land on red/green/blue.
+    logic [18:0] Fn;
+    assign Fn = 19'((F >>> 6) + 25'sd196608);
+    logic [2:0]  seg;
+    assign seg = (Fn >= 19'd393216) ? 3'd5 : Fn[18:16];
+    logic [2:0] q3;
+    logic [1:0] q2;
+    assign q3 = Fn[15:13];
+    assign q2 = Fn[15:14];
 
-    // 16-bit phase arithmetic on purpose: the product and the per-frame offset
-    // sum wrap at 2**16, and 2**16 phase codes are exactly one turn (see
-    // apu_cordic), so the wrap is the intended mod-1-turn, not a lost carry.
-    assign phase_x = (x_i * 16'd102) + frame_x;
-    assign phase_y = (y_i * 16'd137) + frame_y;
+    logic [2:0] r3, g3;
+    logic [1:0] b2;
+    always_comb begin
+        case (seg)
+            3'd0:    begin r3 = 3'd7;   g3 = q3;     b2 = 2'd0;   end
+            3'd1:    begin r3 = 3'(7-q3); g3 = 3'd7; b2 = 2'd0;   end
+            3'd2:    begin r3 = 3'd0;   g3 = 3'd7;   b2 = q2;     end
+            3'd3:    begin r3 = 3'd0;   g3 = 3'(7-q3); b2 = 2'd3; end
+            3'd4:    begin r3 = q3;     g3 = 3'd0;   b2 = 2'd3;   end
+            default: begin r3 = 3'd7;   g3 = 3'd0;   b2 = 2'(3-q2); end
+        endcase
+    end
+    assign rgb_o = {r3, g3, b2};
+
+    // 16-bit phase arithmetic: products and offsets wrap at 2**16 = one turn
+    // (see apu_cordic). sum_xy widened first: x_i+y_i exceeds coord_t's 10 bits.
+    assign phase_x = (x_i * KX) + frame_x;
+    assign phase_y = (y_i * KY) + frame_y;
+    assign sum_xy  = {6'd0, x_i} + {6'd0, y_i};
+    assign phase_z = (sum_xy * KZ) + frame_z;
 
     apu_cordic u_cordic_x (
-        .clk_i   (clk_pix_i),
-        .rst_n_i (rst_n_i),
-        .vld_i   (de_i),
-        .phase_i (phase_x),
-        .vld_o   (cordic_x_vld),
-        .cos_o   (cordic_x_cos),
-        .sin_o   (cordic_x_sin)
+        .clk_i (clk_pix_i), .rst_n_i (rst_n_i), .vld_i (de_i),
+        .phase_i (phase_x), .vld_o (cordic_x_vld),
+        .cos_o (cordic_x_cos), .sin_o (cordic_x_sin)
     );
-
     apu_cordic u_cordic_y (
-        .clk_i   (clk_pix_i),
-        .rst_n_i (rst_n_i),
-        .vld_i   (de_i),
-        .phase_i (phase_y),
-        .vld_o   (cordic_y_vld),
-        .cos_o   (cordic_y_cos),
-        .sin_o   (cordic_y_sin)
+        .clk_i (clk_pix_i), .rst_n_i (rst_n_i), .vld_i (de_i),
+        .phase_i (phase_y), .vld_o (cordic_y_vld),
+        .cos_o (cordic_y_cos), .sin_o (cordic_y_sin)
+    );
+    apu_cordic u_cordic_z (
+        .clk_i (clk_pix_i), .rst_n_i (rst_n_i), .vld_i (de_i),
+        .phase_i (phase_z), .vld_o (cordic_z_vld),
+        .cos_o (cordic_z_cos), .sin_o (cordic_z_sin)
     );
 
-    // Each channel is a different phase relationship of the two sine waves.
-    // Bias signed Q2.22 sums into an unsigned range before reducing to RGB332.
-    assign red_wave   = $signed(cordic_x_sin) + $signed(cordic_y_sin);
-    assign green_wave = $signed(cordic_x_sin) - $signed(cordic_y_sin);
-    assign blue_wave  = -$signed(cordic_x_cos) + $signed(cordic_y_cos);
-    assign rgb_o = {wave_to_3(red_wave), wave_to_3(green_wave), wave_to_2(blue_wave)};
-    assign de_o = cordic_x_vld & cordic_y_vld;
+    // de_o is the shared CORDIC valid: de_i delayed by the 18-stage pipeline.
+    assign de_o = cordic_x_vld & cordic_y_vld & cordic_z_vld;
 
-    // Two offsets advancing at different rates: the x and y gratings drift
-    // against each other, so the interference morphs (boils) instead of sliding
-    // rigidly. 257 and 163 are odd and coprime, so the pattern has a long
-    // period before it repeats. Async reset matches the scenes and the CORDIC.
+    // Cosines are unused here (the field sums sines only); fold them into the
+    // repo's standard unused-signal sink so -Wall stays clean.
+    logic _unused_ok = &{1'b0, cordic_x_cos, cordic_y_cos, cordic_z_cos};
+
     always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
         if (!rst_n_i) begin
             frame_x <= '0;
             frame_y <= '0;
+            frame_z <= '0;
         end else if (sof_i) begin
-            frame_x <= frame_x + 16'd257;
-            frame_y <= frame_y + 16'd163;
+            frame_x <= frame_x + DX;
+            frame_y <= frame_y + DY;
+            frame_z <= frame_z + DZ;
         end
     end
 
