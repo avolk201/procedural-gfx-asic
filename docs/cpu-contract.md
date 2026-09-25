@@ -1,13 +1,5 @@
 # RV32 SoC contract
 
-DRAFT rev 3, 2026-09-25. Rev 2 described an SMP pair; the owner decided
-hardware AMP the same day (D19), and this rev folds in that decision plus
-the earlier ones (marked "decided"). Open items are in section 10; nothing
-here is final until they are resolved and the owner has rewritten this
-document in full. Per the repo method (contract doc, golden model,
-self-checking tb seen to fail once, then RTL), this must be complete before
-any rtl/cpu file exists.
-
 ## 1. Scope
 
 RV32I, two harts, asymmetric multiprocessing (AMP) with hardware-partitioned
