@@ -36,3 +36,6 @@ jobs:
 
       - name: Run CORDIC RTL cross-check against the model
         run: make sim_cordic
+
+      - name: Run plasma scene look check
+        run: make sim_plasma

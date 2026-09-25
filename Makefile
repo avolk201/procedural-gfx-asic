@@ -48,8 +48,8 @@ lint_i2c: rtl/i2c_controller.sv
 lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv
 	verilator --lint-only -Wall --top-module de10nano_top rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorbars.sv rtl/apu_plasma.sv rtl/apu_top.sv rtl/i2c_controller.sv rtl/adv7513_config.sv rtl/pll_25m.sv rtl/de10nano_top.sv rtl/sync_reset.sv
 
-# apu_cordic is standalone (not yet instantiated in de10nano_top), so it gets
-# its own lint rather than being folded into lint_top, whose top is de10nano_top.
+# apu_cordic gets its own lint as a fast standalone check; lint_top covers
+# it in-tree (instantiated via apu_plasma under apu_top).
 lint_cordic: rtl/apu_cordic.sv
 	verilator --lint-only -Wall --top-module apu_cordic rtl/apu_cordic.sv
 
