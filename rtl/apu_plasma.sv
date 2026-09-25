@@ -85,7 +85,8 @@ module apu_plasma (
         .cos_o (cordic_z_cos), .sin_o (cordic_z_sin)
     );
 
-    // de_o is the shared CORDIC valid: de_i delayed by the 18-stage pipeline.
+    // de_o is the shared CORDIC valid: de_i delayed by the pipeline, 19 clk
+    // at system level (D18; sim_cordic's fill of 18 counts iterations).
     assign de_o = cordic_x_vld & cordic_y_vld & cordic_z_vld;
 
     // Cosines are unused here (the field sums sines only); fold them into the

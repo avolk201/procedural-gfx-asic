@@ -16,6 +16,16 @@ module apu_top #(
     output apu_pkg::rgb332_t rgb_o
 );
 
+    // D18: scene pipeline depth, the system-measured de_i->de_o delay.
+    // Plasma: 19 clk, measured by sim_main's DE-during-HSync check;
+    // sim_cordic's fill of 18 is its iteration convention (it reads the
+    // output after the sampling edge of the same index). Bound: H_BP = 48.
+    localparam int unsigned DEPTH =
+        (SCENE == apu_pkg::SCENE_PLASMA) ? 19 : 1;
+
+    logic            vga_de_pre, vga_sof_pre;
+    apu_pkg::coord_t vga_x_pre, vga_y_pre;
+
     logic             vga_de;
     apu_pkg::coord_t  vga_x;
     apu_pkg::coord_t  vga_y;
@@ -25,7 +35,9 @@ module apu_top #(
     apu_pkg::rgb332_t cb_rgb;
     apu_pkg::rgb332_t pl_rgb;
 
-    apu_vga_timing u_vga (
+    apu_vga_timing #(
+        .DEPTH (DEPTH)
+    ) u_vga (
         .clk_pix_i (clk_pix_i),
         .rst_n_i   (rst_n_i),
         .hsync_o   (hsync_o),
@@ -34,15 +46,19 @@ module apu_top #(
         .sol_o     (sol_o),
         .de_o      (vga_de),
         .x_o       (vga_x),
-        .y_o       (vga_y)
+        .y_o       (vga_y),
+        .de_pre_o  (vga_de_pre),
+        .x_pre_o   (vga_x_pre),
+        .y_pre_o   (vga_y_pre),
+        .sof_pre_o (vga_sof_pre)
     );
 
     apu_colorbars u_colorbars (
         .clk_pix_i (clk_pix_i),
         .rst_n_i   (rst_n_i),
-        .de_i      (vga_de),
-        .x_i       (vga_x),
-        .y_i       (vga_y),
+        .de_i      (vga_de_pre),
+        .x_i       (vga_x_pre),
+        .y_i       (vga_y_pre),
         .de_o      (cb_de),
         .rgb_o     (cb_rgb)
     );
@@ -50,10 +66,10 @@ module apu_top #(
     apu_plasma u_plasma (
         .clk_pix_i (clk_pix_i),
         .rst_n_i   (rst_n_i),
-        .de_i      (vga_de),
-        .sof_i     (sof_o),
-        .x_i       (vga_x),
-        .y_i       (vga_y),
+        .de_i      (vga_de_pre),
+        .sof_i     (vga_sof_pre),
+        .x_i       (vga_x_pre),
+        .y_i       (vga_y_pre),
         .de_o      (pl_de),
         .rgb_o     (pl_rgb)
     );
@@ -62,6 +78,10 @@ module apu_top #(
     // branch and the board pays area for exactly one scene.
     assign de_o  = (SCENE == apu_pkg::SCENE_PLASMA) ? pl_de  : cb_de;
     assign rgb_o = (SCENE == apu_pkg::SCENE_PLASMA) ? pl_rgb : cb_rgb;
+
+    // True beam-window signals: kept for debug and future scenes; the
+    // current scenes run on the prefetch window (D18).
+    logic _unused_ok = &{1'b0, vga_de, vga_x, vga_y};
 
 endmodule
 /* verilator lint_on SYNCASYNCNET */

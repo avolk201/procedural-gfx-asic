@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
     bool prev_sof = false;
 
     // Window N holds exactly frame N's 307200 px at their true raster
-    // positions: the 18-clk de_o delay lands in the porch, where de_i is
-    // low, so no previous-frame pixel bleeds into the capture.
+    // positions: with the D18 prefetch, de_o is aligned to the active
+    // window, and frame N's last pixel lands well before the next SOF.
     const unsigned long long TOTAL_CYCLES = (want_frame + 2) * 420000ull;
 
     for (unsigned long long cycle = 0; cycle < TOTAL_CYCLES; cycle++) {
