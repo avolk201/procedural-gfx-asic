@@ -2,11 +2,15 @@
 
 ## 1. Scope
 
-RV32I, two harts, asymmetric multiprocessing (AMP) with hardware-partitioned
-memory, register interfaces partitioned by owner, and mailbox IPC. No
-caches, no A, no C. M extension after I passes on both harts. Synchronization
-between harts is the mailbox protocol; there are no locks because there is no
-shared mutable memory.
+RV32I_Zicsr, two harts, asymmetric multiprocessing (AMP) with
+hardware-partitioned memory, register interfaces partitioned by owner, and
+mailbox IPC. The CSR instructions left the base ISA at version 2.1 and live
+in Zicsr v2.0 (unprivileged vol. 20250508, preface and ch. 6); mhartid
+(privileged vol. 3.1.5, CSR 0xF14) needs them, so Zicsr is in the ISA string
+and the six CSR instructions are in the assembler. No caches, no A, no C.
+M extension after I passes on both harts. Synchronization between harts is
+the mailbox protocol; there are no locks because there is no shared mutable
+memory.
 
 ## 2. Topology and roles (decided, D19)
 
@@ -123,7 +127,9 @@ it is defined.
   the external conflict resolution on hart0's D-RAM.
 - Documented consequence, so nobody builds fence logic: in-order
   single-issue harts and no caches mean every access reaches memory in
-  program order; FENCE and FENCE.I may be NOPs at this integration level.
+  program order; FENCE may be implemented as a NOP at this integration
+  level. FENCE.I is Zifencei, outside the ISA string; the assembler does
+  not emit it, since there is no I-cache.
 - Boot images: inferred RAM with initial $readmemh, one mechanism for
   Verilator and Quartus, fed directly by the assembler (decided). Two
   images, firmware0.hex and firmware1.hex, each linked at 0x0000_0000 in its
@@ -168,9 +174,10 @@ it is defined.
 1. This contract, section 10 OPENs resolved.
 2. Assembler in tools/ (Python): GNU-as-like subset (labels with ':',
    .text/.org/.word/.byte/.half/.space, '#' comments), $readmemh-compatible
-   flat hex output (decided). Golden tests: every emitted RV32I instruction
-   hand-encoded against unprivileged vol. 20250508 ch. 2.1. Emits one image
-   per hart from separate sources.
+   flat hex output (decided). Golden tests: every emitted instruction
+   hand-encoded against the unprivileged vol. 20250508 (per-instruction
+   sections in ch. 2 plus the ch. 35 RV32I listing, pp. 609-611, and the
+   Zicsr rows). Emits one image per hart from separate sources.
 3. Two-hart golden model (Python ISS): per-hart state, private memories,
    mailbox model, tb-controllable interleaving of the two instruction
    streams (the knob is smaller than SMP's, but protocol tests still need
