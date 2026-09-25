@@ -73,6 +73,13 @@ equals the declared 18. If a stage is added or removed, E fails and forces the
 number and the header comment to be reconciled. Throughput is one sample per
 clock once filled; check T asserts the `vld_o` train is contiguous.
 
+Convention (B18, 2026-09-25): E's fill of 18 counts tb iterations, from the
+iteration `vld_i` is presented to the iteration `vld_o` is read after that
+iteration's posedge. In system clocks the delay from registered input to
+registered output is 19 (1 + 16 + 2 stages, the sum the structure above
+spells out). Alignment consumers use the system number: apu_top sets
+DEPTH=19 for the plasma prefetch (D18).
+
 ## Error budget
 
 Measured over all 2**16 phases against `math.sin`/`math.cos` (2026-09-24), then

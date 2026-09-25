@@ -9,7 +9,7 @@ flashing run on a Bazzite box with Quartus Prime Standard 25.1 (Pro does not
 support Cyclone V). First bring-up happened 2026-09-23: colorbars on a real
 monitor, logged in docs/devlog.md along with the flash commands. The plasma
 scene followed on hardware 2026-09-25 (B17): timing closed, full-width image
-on one OLED.
+on one OLED; the D18 DE-aligned build re-verified the same day (B18).
 
 Constants and constraints in the code trace back to the specs listed in
 docs/references.md. I can't include the PDFs themselves (copyright), but if
@@ -55,12 +55,12 @@ and the I2C timing come straight out of those documents, not out of thin air.
 
 | Target | Proves | Run | Key numbers |
 |---|---|---|---|
-| apu_top via colorbars | VGA timing + pixel pipeline | `make sim` | HSync 96 px, VSync 2 lines (measured while low), frame = 420,000 cycles, one-frame PPM capture = 307,200 px |
-| apu_top via plasma | scene contract at depth 18, look check | `make sim_plasma` (`+frame=N` window) | 307,200 px captured in frame window 1; 29 distinct RGB332 codes across 60 frames (D17 baseline: 28); every frame of docs/plasma.gif byte-identical to its capture on round-trip |
+| apu_top via colorbars | VGA timing + pixel pipeline | `make sim` | HSync 96 px, VSync 2 lines (measured while low), frame = 420,000 cycles, one-frame PPM capture = 307,200 px, DE during HSync = 0 cycles (check added with D18) |
+| apu_top via plasma | scene contract at depth 19 (B18), look check | `make sim_plasma` (`+frame=N` window) | 307,200 px captured in frame window 1; 29 distinct RGB332 codes across 60 frames (D17 baseline: 28); every frame of docs/plasma.gif byte-identical to its capture on round-trip |
 | i2c_controller, closed loop vs C++ target model | full I2C write protocol | `make sim_i2c` (`-v` = bus trace) | 21 checks over T1/T2: busy latency <= CLK_DIV+1, hold-until-busy, one START before first data rise, 27 data rises, wire bytes {72,41,00} and {70,41,00}, ACK levels, one STOP, done width measured 250, ack_err sticky in T2; ~14,998 cycles/transaction |
 | all RTL | zero-warning lint gate | `make lint`, `make lint_i2c` | runs before anything else |
-| de10nano_top on DE10-Nano | hardware bring-up: colorbars 2026-09-23, plasma 2026-09-25 | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16). Plasma build 2026-09-25 (.sof 0x00E40517): worst slack +14.032/+0.271/+16.882/+0.943/+1.241, TNS 0.000, divclk Fmax 72.14 MHz, 2058 ALMs / 3 DSP / 0 M10K bits, boiling plasma full-width on one OLED (B17) |
-| apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency measured 18, 1/clk |
+| de10nano_top on DE10-Nano | hardware bring-up: colorbars 2026-09-23, plasma 2026-09-25 | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16). Plasma build 2026-09-25 (.sof 0x00E40517): worst slack +14.032/+0.271/+16.882/+0.943/+1.241, TNS 0.000, divclk Fmax 72.14 MHz, 2058 ALMs / 3 DSP / 0 M10K bits, boiling plasma full-width on one OLED (B17). D18 build 2026-09-25 (.sof 0x00E4BE7C): worst slack +14.012/+0.168/+16.599/+0.698/+1.241, TNS 0.000, divclk Fmax 72.79 MHz, 2067 ALMs / 3 DSP / 0 M10K bits, DE aligned to the active window, image unchanged on the same OLED (B18) |
+| apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency: fill 18 per sim_cordic's iteration convention = 19 system clocks (B18), 1/clk |
 
 
 ## Method
@@ -101,17 +101,13 @@ reasoning behind each.
 - Computed-color scenes are not dithered. Ordered Bayer dither was evaluated
   against the hue-wheel plasma and rejected as a color-depth limit (D17);
   banding at RGB332 is accepted and measured (distinct=28, longest-run=514px).
-- de_o is misaligned from the VESA active window by the scene's pipeline
-  depth (plasma: burst [18,658) per line, 2 clocks of DE during hsync,
-  HS-to-DE gap 66 px against 48). The ADV7513 passes DE through unchanged
-  (PG Rev B 4.3.6), so the 2026-09-25 image is correct by sink tolerance on
-  one OLED. D18 (back-porch prefetch, depth bound 48) is decided, not
-  implemented; the tb check that would enforce it is frozen (B17).
-- No MTBF evidence for the clock-domain crossings. The Quartus metastability
-  report finds 1 synchronizer chain but calculates no MTBF ("there are no
-  specified synchronizers"); the syncthreads attribute in de10nano_top.sv is
-  Synplify's and Quartus ignores it. Synchronizer-identification assignments
-  are an open item before regif CDC work.
+- CDC MTBF: the specified pixel-to-50 MHz toggle chain measures > 1e9 years
+  worst-case at 17.920 ns available settling (2026-09-25 D18 build);
+  Quartus models it as length 1, conservative against the real two-flop
+  structure. The second, auto-detected chain is the 50 MHz to pixel reset
+  crossing (source rst_cnt[24], node u_sync_rst_pix|d[0]): detected, MTBF
+  not calculated, still justified by construction (B16). The DE alignment
+  gap closed with D18 (19e6272); the enforcing check runs in make sim.
 - No coverage metric beyond this inventory.
 - No formal methods. The I2C contract is enforced by simulation only.
 

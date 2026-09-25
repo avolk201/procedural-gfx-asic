@@ -367,6 +367,10 @@ Evidence: the before/after distinct/longest-run measurements above, from
 make sim_plasma frame captures. docs/verification.md records the accepted
 banding as a known gap.
 
+Correction (2026-09-25): the CORDIC result corresponds to x,y fed 19 system
+clocks earlier, not 18; sim_cordic's fill of 18 is its iteration convention
+(B18). A future dither index delays x,y by 19.
+
 ## D18: scene output alignment by back-porch prefetch
 
 2026-09-25. Phase 4 scene contract. Status: decided, not implemented. The tb
@@ -422,3 +426,15 @@ Consequences:
 - Until it lands the board claim is: plasma displays correctly on one sink
   (OLED, 2026-09-25) by sink-side realignment. B17 carries the exposure and
   the falsified band prediction.
+
+Implementation (2026-09-25, 19e6272): shipped, and the bullet above is
+closed. The context's latency of 18 was itself off by one (B18): the pre-fix
+burst was [19, 659) with 3 clocks of overlap per line (1440 per frame) and a
+67 px HS-to-DE gap. Post-fix, measured: overlap 0 in both scenes (the new
+sim_main check, red at 2880 over two frames before the RTL change), DE count
+614400, plasma frame capture byte-identical (sha256 de1ba729...), and v_cnt
+resets to V_TOTAL-1 so the first line after reset is fully prefetched.
+Hardware re-verified the same day: .sof 0x00E4BE7C flashed 15:19:50, worst
+slack +14.012/+0.168/+16.599/+0.698/+1.241, TNS 0.000, divclk Fmax
+72.79 MHz, image unchanged on the OLED. Plasma uses 19 of the 48-clock
+depth bound.

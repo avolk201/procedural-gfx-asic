@@ -16,7 +16,7 @@ something needs them (roadmap Phase 9 rule: do not build speculatively).
 
 - clk_50m: system/input clock, 20 ns period (constraints/timing.sdc).
 - clk_pix: 25.175 MHz fractional-PLL output, 39.718 ns period; divclk Fmax
-  on the plasma build is 72.14 MHz (sta.rpt, 2026-09-25), so a CPU at
+  on the D18 build is 72.79 MHz (sta.rpt, 2026-09-25), so a CPU at
   25.175 MHz or 50 MHz has measured headroom on this fabric.
 - CPU clock domain: OPEN. Same 50 MHz as sys (fewest crossings) or a second
   PLL output. Any new domain adds a clock group and its own reset source.
@@ -31,9 +31,10 @@ something needs them (roadmap Phase 9 rule: do not build speculatively).
 
 - Every crossing: two-flop synchronizer minimum, with Quartus
   SYNCHRONIZER_IDENTIFICATION assignments so report_metastability computes
-  MTBF (the 2026-09-25 sta.rpt calculated none: "no specified
-  synchronizers"). The syncthreads attribute is Synplify's; Quartus ignores
-  it (verification.md known gaps).
+  MTBF (done 2026-09-25: the specified pixel-to-50 MHz chain measures
+  > 1e9 years worst-case; the reset crossing is detected but not
+  calculated, B16). The syncthreads attribute is Synplify's; Quartus
+  ignores it.
 - Scene control registers written by the CPU live in the pixel domain or
   cross via handshake; camera/scene inputs are sampled at SOF by the scenes
   (apu_plasma.sv frame counters), so the regif may double-buffer freely

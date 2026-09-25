@@ -11,9 +11,9 @@ scene. VGA timing, SMPTE colorbars and the ADV7513 HDMI config walker are
 verified in Verilator, and the whole chain has run on real hardware: colorbars
 on a monitor off a DE10-Nano, 2026-09-23. The math core, a pipelined CORDIC,
 is cross-checked against a Python golden model for all 65536 phases and now
-drives a three-grating plasma scene; that build closed timing (worst setup
-slack +14.032 ns, Slow 1100mV 100C) and ran on the board 2026-09-25. There is
-still no RV32 core.
+drives a three-grating plasma scene; the current build (D18 DE alignment)
+closed timing at worst setup slack +14.012 ns, Slow 1100mV 100C, and ran on
+the board 2026-09-25. There is still no RV32 core.
 
 Toolchain (what results are reproduced with):
 

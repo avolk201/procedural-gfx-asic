@@ -367,13 +367,61 @@ the VESA active window, one TV tolerates it, and no sim could see it because
 both captures write pixels sequentially and reconstruct the intended image
 whatever the screen position.
 
-Fix: none applied. D18 decides the back-porch prefetch (de_o aligned to
-[0, 640), scene depth bound 48). The planned tb check counts de_o && !hsync_o
-cycles, expected 0; today's plasma would fail it at 960 per frame. Until that
-lands, plasma is verified on exactly one sink.
+Fix: implemented the same day (19e6272): back-porch prefetch per D18, de_o
+aligned to [0, 640), scene depth bound 48. The enforcing check landed first
+(2ad39fc) and failed the pre-fix plasma build at 2880 cycles over the tb's
+two frames, which exposed B18. Re-verified on hardware 2026-09-25 15:19:50,
+.sof checksum 0x00E4BE7C, image unchanged on the same OLED.
+
+Correction (2026-09-25): the burst arithmetic above used latency 18. The
+system-level delay is 19 clk (B18): read [19, 659), 3 clocks of overlap per
+line (1440 per frame), HS-to-DE gap 67 px, and a 19 px predicted band. The
+lesson's claim that the arithmetic was right no longer holds: the layer
+analysis was correct, the clock count was not (B18).
 
 Lesson: when an observation contradicts a prediction, find which layer
 contradicted it before retiring the prediction; the arithmetic here was right
 and the layer was the TV, not the transmitter. One sink is a sample size of
 one. And a capture that reconstructs position from a stream cannot check
 position; only the timing signals can.
+
+## B18: the latency everyone wrote as 18 is 19 at system level
+
+2026-09-25. apu_cordic latency convention, D18 numbers. Status: FIXED
+(19e6272 uses the measured 19; docs corrected in the same pass).
+
+Observed: the red run of the new DE-during-HSync check (2ad39fc) measured
+2880 overlap cycles over the tb's two frames on the pre-fix plasma build.
+The prediction from the documented latency was 1920 (2 per line). 2880 over
+960 active lines is 3 per line, so the burst starts at h=19, not h=18.
+
+Initial suspicion: an off-by-one in the new check's window. Wrong turn: the
+check spans exactly two frames and colorbars reads 0, as predicted; the 2880
+is real.
+
+Fault: a convention mismatch that cordic.md had already described without
+reconciling. The vld chain is 19 register stages: valid_pipe[0] (1),
+valid_pipe[1..16] (16 more), vld_mid (18), vld_o (19). sim_cordic presents
+vld_i in iteration 0 and reads vld_o after the posedge of iteration 18, so
+check E measures a fill of 18 and LATENCY=18 is self-consistent under that
+convention. Any consumer that treats the 18 as a system-clock delay is one
+clock off. B17, the D18 context, the D17 consequence, the verification
+inventory, cordic.md's own structure paragraph, and both scene comments all
+carried the 18.
+
+Fix: DEPTH=19 for plasma in apu_top (19e6272), with the convention written
+into the comments at the point of use. Post-fix, measured: overlap 0 in both
+scenes, DE count 614400, plasma frame capture byte-identical to the pre-fix
+control (sha256 de1ba729...), and v_cnt now resets to V_TOTAL-1 so the first
+active line after reset is fully prefetched; no tb expectation was loosened
+to get there. Hardware re-verify: Flow Successful 15:19:06 at HEAD 9f5dc7b,
+worst slack setup +14.012 / hold +0.168 / recovery +16.599 / removal +0.698 /
+min pulse width +1.241, TNS 0.000, divclk Fmax 72.79 MHz, .sof 0x00E4BE7C
+flashed 15:19:50, image unchanged on the OLED. sim_cordic keeps its 18 by
+design; unifying the contract's wording is open.
+
+Lesson: a latency number without its measuring convention will be consumed
+under a different one. cordic.md said "roughly 18, easy to miscount by one"
+next to a structure that sums to 19, and every document that repeated the 18
+inherited the miscount. The check that caught it was expected to fail and
+failed at a number nobody had predicted; the surprise was the point.
