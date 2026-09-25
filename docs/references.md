@@ -7,7 +7,8 @@ can be traced to a page.
 
 ## I2C-bus specification (NXP UM10204)
 - Where: nxp.com, document UM10204 "The I2C-bus specification"
-- Revision / accessed: (fill in)
+- Revision: Rev. 7.0, 1 October 2021. Local copy: docs/specs/12c-docs.pdf
+  (revision read from the title page, 2026-09-25).
 - Relied on: START/STOP definitions (SDA transitions while SCL high), data
   validity rule (SDA stable while SCL high), 9th-clock ACK/NACK behavior,
   open-drain/wired-AND electrical model, controller-target terminology.
@@ -15,14 +16,21 @@ can be traced to a page.
 
 ## VESA Display Monitor Timing (DMT) standard
 - Where: vesa.org (free download of the DMT spec)
-- Revision / accessed: (fill in)
+- Revision / accessed: NOT ON FILE. The DMT spec itself is not in
+  docs/specs/, and the local "VGA Hardware - OSDev Wiki.pdf" covers legacy
+  VGA modes, not the 640x480@60 DMT row (checked 2026-09-25). The constants
+  in apu_pkg.sv are hardware-proven (two displays, 2026-09-23 and
+  2026-09-25) but paper-uncited. Action: download the DMT spec and record
+  its revision here.
 - Relied on: 640x480@60Hz row: 25.175 MHz pixel clock, H 16/96/48, V 10/2/33
   porches/syncs, negative sync polarity.
 - Used by: rtl/apu_pkg.sv constants, apu_vga_timing.sv.
 
 ## Terasic DE10-Nano user manual + schematic
 - Where: terasic.com.tw, DE10-Nano product page (manual and CD/schematic zip)
-- Revision / accessed: (fill in)
+- Revision: User Manual title page dated February 1, 2018; local copy
+  docs/specs/DE10-Nano-Manual.pdf (date read from the PDF, 2026-09-25).
+  Schematic: de10-nano-schematic-711128.pdf (local).
 - Relied on: Table 3-13 HDMI pin assignments (transcribed into
   constraints/de10nano_pinout.qsf 2026-09-20), Table 3-19 microSD socket
   (HPS-only pins, drove decision D15: SPI module on GPIO instead), FPGA pin
@@ -39,7 +47,9 @@ can be traced to a page.
 - Relied on: sec 3 Quick Start + Table 14 (fixed registers after power-up),
   Table 16 (RGB 4:4:4 pin map: D[23:16]=R), Table 4 (HDMI/DVI select),
   sec 4.1 (200 ms wait after supplies; PD/AD strap selects 0x72/0x7A),
-  sec 4.7 (power down bit 0x41[6]).
+  sec 4.7 (power down bit 0x41[6]), sec 4.3.6 (DE/HS/VS generation: the
+  separate-syncs method passes the provided timing through when 0x17[0] DE
+  generator and 0x41[1] sync adjustment are off; basis for B17/D18).
 - Used by: rtl/adv7513_config.sv ROM (per-entry citations) and its tb golden
   table, POR length in rtl/de10nano_top.sv, tb constants (DEV_ADDR_OK).
 - RESOLVED via board schematic (de10-nano-schematic-711128.pdf, local):

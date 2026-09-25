@@ -323,3 +323,57 @@ stopwatch match nor a discrepancy. Eight colorbars at 640x480 on the monitor.
 Lesson: deleting a failing path hides it rather than fixing it. The test of
 the fix is whether anything still measures the path. Check the mtime before
 the numbers, same as rule 5.
+
+## B17: plasma is perfect on the OLED, and the DE window is 18 clocks off
+
+2026-09-25. rtl/apu_plasma.sv and the scene contract. Status: OPEN. D18
+records the fix; no RTL has changed.
+
+Observed: the plasma build ran on hardware. Provenance: box synced to 145a1ec
+(36 files, digest match), sta.rpt deleted before compile, compile started
+01:16:54, Flow Status "Successful - Fri Sep 25 01:25:09", quartus_pgm at
+01:25:35, .sof checksum 0x00E40517, JTAG ID 0x02D020DD, device index 2,
+0 errors, 0 warnings. Worst-case slack, Slow 1100mV 100C: setup +14.032,
+hold +0.271, recovery +16.882, removal +0.943, min pulse width +1.241, End
+Point TNS 0.000; divclk Fmax 72.14 MHz against the 25.175 needed. Resources:
+2058 of 41910 ALMs, 3 DSP blocks, zero block memory bits. On the OLED in
+original-aspect mode: boiling plasma, full width, no band, no shift. Video
+committed as docs/plasma-bring-up.mov (6d1e9ab), re-encoded to
+docs/plasma-bring-up.mp4 (640x360, 30 fps, 588044 bytes) because GitHub
+would not display the 4.8 MB mov inline.
+
+Initial suspicion (the agent session's, written down before the flash per
+rule 5): the scene contract delays de_o by the pipeline depth, so at depth 18
+the burst spans h_cnt [18, 658) while hsync is low over [656, 752).
+Predicted: an 18 px blank band at the left edge, the right 18 columns
+clipped, and 2 clocks of DE inside the sync pulse per line. The board showed
+none of it.
+
+Wrong turn inside the wrong turn: the re-check put the TV in original aspect
+and still saw nothing, but on an OLED the predicted band is pixels-off black
+against a black bezel. That observation could not have come out wrong
+either. Rule 5 applies to the choice of instrument as much as to the
+experiment itself.
+
+Fault: the prediction named the wrong device as the one hiding the
+misalignment. The ADV7513 does not realign anything: PG Rev B 4.3.6 says of
+the separate HS/VS/DE method that "all necessary signals are provided so
+neither Sync generation or DE generation is required", and the shipped ROM
+leaves the DE generator off (0x17[0]=0) and sync adjustment off (0x41[1]=0).
+The TMDS stream carries the shifted burst and the 2-clock overlap. The OLED
+absorbs it, most plausibly by starting each line's active data at the first
+DE-high pixel. The defect is real and now sink-dependent: DE does not match
+the VESA active window, one TV tolerates it, and no sim could see it because
+both captures write pixels sequentially and reconstruct the intended image
+whatever the screen position.
+
+Fix: none applied. D18 decides the back-porch prefetch (de_o aligned to
+[0, 640), scene depth bound 48). The planned tb check counts de_o && !hsync_o
+cycles, expected 0; today's plasma would fail it at 960 per frame. Until that
+lands, plasma is verified on exactly one sink.
+
+Lesson: when an observation contradicts a prediction, find which layer
+contradicted it before retiring the prediction; the arithmetic here was right
+and the layer was the TV, not the transmitter. One sink is a sample size of
+one. And a capture that reconstructs position from a stream cannot check
+position; only the timing signals can.

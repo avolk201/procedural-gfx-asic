@@ -1,8 +1,8 @@
 # Deploy: DE10-Nano bring-up and flashing
 
-How this design gets from source to colorbars on a monitor. The night this
-was first done is logged in docs/devlog.md ("Bring-up: 2026-09-23"); this
-file is the procedure, that file is the story including the wrong turns.
+How this design gets from source to video on a monitor. The night this was
+first done is logged in docs/devlog.md ("Bring-up: 2026-09-23"); this file is
+the procedure, that file is the story including the wrong turns.
 
 ## What you need
 
@@ -75,7 +75,10 @@ A hand-written .cdf is ignored by this command; @2 is the idiom. Expect
 | LED2 | pll_locked  | on within milliseconds of reset release   |
 | LED3 | alive blink | ~1 Hz, one toggle per 30 frames           |
 
-then eight colorbars on the monitor at 640x480@60.
+then video on the monitor at 640x480@60. The current SCENE_PLASMA build
+shows a boiling plasma pattern; flipping the one SCENE token in
+de10nano_top.sv to SCENE_COLORBARS restores eight colorbars, the known-good
+bring-up reference.
 
 The user LEDs carry no per-LED silkscreen; identify them by behavior.
 Reset is KEY0: hold it and everything goes dark, release and watch the

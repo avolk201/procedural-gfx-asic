@@ -366,3 +366,59 @@ via brightness) is adopted instead.
 Evidence: the before/after distinct/longest-run measurements above, from
 make sim_plasma frame captures. docs/verification.md records the accepted
 banding as a known gap.
+
+## D18: scene output alignment by back-porch prefetch
+
+2026-09-25. Phase 4 scene contract. Status: decided, not implemented. The tb
+work is frozen until the owner lifts it; per the repo method this contract is
+written before the RTL (D17 precedent).
+
+Context: the frozen scene contract delays de_o by the pipeline depth
+(colorbars 1, plasma 18) so de aligns with the scene's registered rgb. At
+depth 18 the DE burst per line spans h_cnt [18, 658) against the VESA active
+window [0, 640), and H_FP is 16 (apu_pkg.sv). Consequences, computed from the
+RTL and confirmed against the 2026-09-25 plasma build: DE overlaps active
+hsync ([656, 752)) by 2 clocks per active line, 960 clocks per frame, and the
+HS-to-DE gap is 66 px instead of the VESA 48. The ADV7513 forwards all of it:
+PG Rev B 4.3.6, separate HS/VS/DE method, performs no regeneration or
+realignment when the DE generator (0x17[0]) and sync adjustment (0x41[1]) are
+off, which is the shipped ROM. The OLED on the bring-up video
+(docs/plasma-bring-up.mp4) displays a clean full-width image, so this sink
+starts each line's active data at the first DE-high pixel. That is sink
+behavior, not a guarantee; deploy.md already documents displays that refuse
+this timing mode outright.
+
+Decision: the timing generator gains a prefetch DE per scene depth. Each
+scene declares DEPTH; the prefetch window opens DEPTH clocks before the
+active window, inside the back porch, and feeds the scene the first DEPTH
+x-coordinates of the line early, so the scene's delayed de_o lands on
+[0, 640) exactly. Contract bound: DEPTH <= H_BP = 48. The raycaster fits
+under that bound or reopens this decision.
+
+Alternatives:
+1. Ship the delayed DE and rely on sink tolerance. Rejected: the tolerance is
+   measured on exactly one OLED, and portability is the point of the
+   bring-up discipline.
+2. Cap scene depth at H_FP=16 so the delayed burst fits the front porch.
+   Rejected: plasma is already 18, and 16 is too tight for the raycaster.
+3. Re-time de_o at the top with a per-scene pixel buffer. Rejected: that is
+   line-buffer storage, against the framebuffer-less thesis.
+4. Shift the hsync/vsync outputs to match the delayed DE. Rejected: the sync
+   edges would no longer match the VESA DMT row the constants cite.
+
+Planned verification (not built, tb frozen): one check in the timing harness
+counts cycles where de_o && !hsync_o, expected 0. Today's colorbars passes
+(burst [1, 641)); today's plasma fails at 2 per active line, 960 per frame,
+so the check is seen to fail before it is trusted (verification.md rule 4).
+Both sim captures stay blind to this class by construction: they write pixels
+sequentially, which reconstructs the intended image whatever the screen
+alignment, so position is only checkable against the timing signals.
+
+Consequences:
+- apu_vga_timing or apu_top grows the prefetch window and scenes gain a DEPTH
+  parameter, or scenes receive a prefetch de from the top. Either way the
+  frozen interface changes, so colorbars and plasma both get touched when
+  this lands.
+- Until it lands the board claim is: plasma displays correctly on one sink
+  (OLED, 2026-09-25) by sink-side realignment. B17 carries the exposure and
+  the falsified band prediction.

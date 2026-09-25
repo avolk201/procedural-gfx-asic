@@ -107,8 +107,11 @@ fails on correct hardware.
 
 ## Not yet done
 
-`apu_cordic` is verified standalone but is not instantiated in `de10nano_top`
-and has never driven a pixel on the board. That is the next step (wire it to a
-plasma scene, add it to the Quartus file list at the moment it is instantiated),
-and until then the honest status is: math core done and cross-checked, not
-running on hardware.
+Nothing at the core itself, as of 2026-09-25. This section used to say the
+CORDIC had never driven a pixel on the board; the plasma scene made that
+stale. Three `apu_cordic` instances feed rtl/apu_plasma.sv, the module is in
+the Quartus file list, and the build ran on hardware 2026-09-25 (.sof
+0x00E40517): divclk Fmax 72.14 MHz against the 25.175 required, worst setup
+slack +14.032 ns, full-width image on one OLED (B17). The open items around
+it are integration-level, not math-core defects: DE alignment to the VESA
+window (D18) and the demo GIF pipeline (phase 4.5).
