@@ -1,7 +1,8 @@
 // tb/sim_main.cpp
-// Verilator testbench for apu_top: measures HSync width, VSync line count
-// and frame period against VESA 640x480@60, and captures frame 1 to
-// sim/frame.ppm (RGB332 expanded to RGB888 by bit replication).
+// Verilator testbench for apu_top: measures HSync width, VSync line count,
+// frame period and DE-during-HSync overlap against VESA 640x480@60, and
+// captures frame 1 to sim/frame.ppm (RGB332 expanded to RGB888 by bit
+// replication).
 // Exit code is the interface: 0 only if every measurement matched (D6).
 // Build and run: make sim
 
@@ -33,6 +34,7 @@ int main(int argc, char **argv) {
     unsigned long long frame_cycles = 0;    // cycles since last SOF
     unsigned long long sof_count = 0;
     unsigned long long pixels_written = 0;
+    unsigned long long de_during_sync = 0;  // de_o cycles while hsync is low
     bool prev_sof = false;
     bool prev_sol = false;
     bool prev_hsync = true;
@@ -60,6 +62,7 @@ int main(int argc, char **argv) {
         bool sol_o   = tb->sol_o;
 
         if (de_o) de_count++;
+        if (de_o && !hsync_o) de_during_sync++;
 
         // SOF detection runs before the capture gate so sof_count already
         // marks the frame boundary this cycle.
@@ -128,6 +131,13 @@ int main(int argc, char **argv) {
         fails++;
     } else {
         printf("DE count: PASS\n");
+    }
+
+    if (de_during_sync) {
+        printf("DE during HSync: FAIL (%llu cycles, expected 0)\n", de_during_sync);
+        fails++;
+    } else {
+        printf("DE during HSync: PASS (0 cycles)\n");
     }
 
     if (bad_hsync_pulses) {
