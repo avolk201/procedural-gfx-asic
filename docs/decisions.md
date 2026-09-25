@@ -438,3 +438,64 @@ Hardware re-verified the same day: .sof 0x00E4BE7C flashed 15:19:50, worst
 slack +14.012/+0.168/+16.599/+0.698/+1.241, TNS 0.000, divclk Fmax
 72.79 MHz, image unchanged on the OLED. Plasma uses 19 of the 48-clock
 depth bound.
+
+## D19: asymmetric dual-hart SoC (game hart + APU service hart), partitioned in hardware
+
+2026-09-25. Phase 9 architecture. Status: decided by the owner; the contract
+is docs/cpu-contract.md rev 3.
+
+Context: I asked for dual-core, then asked what an asymmetric split would
+buy. In this design (in-order harts, no caches, scratchpad RAM) the cost of
+two cores is not the second core; it is shared mutable state: locks,
+lost-update races, and interleaving verification. Resume defensibility under
+expert follow-up and the probability of actually shipping were the deciding
+concerns, stated here because they decided it.
+
+Options:
+1. SMP over one address space with a regif test-and-set LOCK (contract
+   rev 2). Flexible load balance; keeps the full race and verification
+   surface; expert readers probe the coherence story and find no caches,
+   which deflates the headline.
+2. Software-partitioned roles on symmetric hardware. Proves nothing: the
+   hardware still permits every race, so the tbs still police them all.
+   Rejected as convention dressed as architecture.
+3. Hardware AMP: private I-RAM and D-RAM per hart, regif partitioned by
+   owner, mailbox IPC, no shared mutable state anywhere.
+
+Decision: option 3. hart0 is the game hart (logic, console, input, loading);
+hart1 is the APU service hart (sample-accurate audio sequencing, video
+register direction). The split is the one D16's naming already implied:
+once Phase 6 lands, the project is literally an audio+video processing
+unit, directed by the game hart.
+
+Rationale:
+- Removes the race class by construction instead of policing it, the same
+  move as D18's alignment fix and the Harvard I/D split. No LOCK register
+  and no hart-versus-hart arbiter; verification shrinks from interleaving
+  exploration to mailbox protocol conformance.
+- Matches the industry pattern for fixed-role systems (consoles,
+  Zynq/OpenAMP, MCU+DSP pairs), which is territory I can discuss fluently
+  in an interview.
+- Static load balance is acceptable because the workloads are fixed roles,
+  not general computing.
+- Smaller verification surface raises the probability the demo ships, and a
+  shipped demo beats a bigger-sounding noun.
+
+Consequences:
+- Two boot images, each $readmemh into private RAMs; both harts link at
+  0x0000_0000 in separate address spaces.
+- Bus signal naming stays multi-master capable. The Phase 8 cartridge loader
+  attaches as a second master on the hart0 D-RAM write port; arbitration and
+  its starvation test land there, where a real second master exists.
+- Mailbox v1: one 32-bit slot per direction, full/ack handshake, both harts
+  on clk_50m so the mailbox itself needs no CDC. Writing full-while-full is
+  a protocol violation and a tb-checked claim. FIFO depth stays open.
+- Regif partition: hart1 owns SCENE_SELECT/PIPELINE_ENABLE (camera and audio
+  later); hart0 owns FRAME_COUNT/HART1_RELEASE. If hart1 ever needs a frame
+  tick, the counter is replicated on its segment rather than shared.
+- Audio is its own device on hart1's map (decided the same day): the PSG and
+  I2S TX are fixed-rate fabric, and CPU involvement is musical events, not
+  samples. The audio master clock is a future clock domain; its crossings
+  get the same write-then-toggle scheme and MTBF assignments.
+- Rev 2's LOCK register and shared-memory concurrency suite are dropped; the
+  mutation culture transfers to the mailbox handshake and the release gate.
