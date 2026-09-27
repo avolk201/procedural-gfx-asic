@@ -425,3 +425,43 @@ under a different one. cordic.md said "roughly 18, easy to miscount by one"
 next to a structure that sums to 19, and every document that repeated the 18
 inherited the miscount. The check that caught it was expected to fail and
 failed at a number nobody had predicted; the surprise was the point.
+
+## B19: a golden vector derived from the implementation green-lit a wrong la
+
+2026-09-27. tools/rv32asm.py and its vector file. Status: FIXED (7e2a685).
+
+Observed: the first full assembler draft passed its own 78-check suite while
+encoding la as LUI+ADDI of the symbol's absolute address. The correct form
+is AUIPC+ADDI of (target - pc of the la): unpriv vol. 20250508 p. 29,
+"AUIPC ... is used to build pc-relative addresses", and the ch. 35 rows put
+AUIPC at 0010111 against LUI's 0110111.
+
+Initial suspicion: none from the suite, which is the point. All three la
+vectors expected the LUI words because they had been transcribed from the
+implementation's output rather than hand-encoded from the ch. 35 table. A
+vector whose oracle is the code under test cannot fail on that code's
+mistakes.
+
+Fault: oracle inversion in the vector file plus a missing pc input to
+encode_la. At link base 0 the wrong form still produces the right register
+value, because the absolute address equals what pc+relative computes, so no
+base-0 test could distinguish the two. The bug was latent until an image
+base moves, for example a Phase 8 loader placing code elsewhere.
+
+Fix: encode_la takes the item's pc and emits AUIPC with rel = target - pc.
+Vectors were re-derived from the spec independently by both bookkeepers and
+agreed (00001097/80008093 at target 0x800; 00000097/7ff08093 at 0x7FF). A
+discriminating vector places la at pc=8 targeting pc=16 (nop, nop, la back;
+back: nop, expecting 00000097 then 00808093); it reddens on either failure
+mode, the LUI opcode or the missing pc. Mutation drills after the fix: LA
+call-site pc forced to 0 reddened exactly that vector at the predicted word
+01008093; SLTIU funct3 011->010 reddened the direct vector and seqz through
+its expansion; a one-bit shift in unpack_b (b_imm11 placed at bit 10)
+reddened three round-trip values, all with bit 11 set (-2, 4094, 4092), and
+spared -4096, which carries only bit 12. Suites exit with their fail count.
+
+Lesson: the vector protocol exists for exactly this. Hand-encode from the
+spec, a second bookkeeper re-derives, and only the agreement is golden; a
+vector read off the implementation is a photograph, not a test. And base-0
+testing cannot see pc-relativity at all, so one nonzero-pc vector is worth
+a dozen at zero.

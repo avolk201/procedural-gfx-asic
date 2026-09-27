@@ -208,10 +208,23 @@ it is defined.
 1. This contract, section 10 OPENs resolved.
 2. Assembler in tools/ (Python): GNU-as-like subset (labels with ':',
    .text/.org/.word/.byte/.half/.space, '#' comments), $readmemh-compatible
-   flat hex output (decided). Golden tests: every emitted instruction
-   hand-encoded against the unprivileged vol. 20250508 (per-instruction
-   sections in ch. 2 plus the ch. 35 RV32I listing, pp. 609-611, and the
-   Zicsr rows). Emits one image per hart from separate sources.
+  flat hex output (decided). Labels may precede a statement on the same
+  line. Integer literals are decimal unless explicitly prefixed with 0x, 0b,
+  or 0o; legacy leading-zero octal (for example, `.byte 010`) is rejected.
+  `.org` may advance the location counter but cannot move it backward.
+  Images are capped at 1 MiB; `--lst` currently fails explicitly as
+  unimplemented rather than silently ignoring the request. ABI register
+  aliases and the `mhartid` CSR name are supported. Pseudos: `nop`, `li`,
+  `la`, `mv`, `j`, `jr`, `ret`, `beqz`, `bnez`, `neg`, `not`, `seqz`,
+  `snez`, `csrr`, and `csrw`. Dialect choices: bare `fence` means `rw,rw`
+  (not GAS's `iorw,iorw`); `jal` requires an explicit `rd`; three-operand
+  `jalr` is written `jalr rd, rs1, offset`. Numeric branch/jump targets are
+  relative byte offsets; symbol targets are absolute addresses resolved
+  relative to the instruction PC. `la` emits AUIPC+ADDI for the symbol
+  address relative to the AUIPC instruction PC. Golden tests: every emitted
+  instruction hand-encoded against the unprivileged vol. 20250508
+  (per-instruction sections in ch. 2 plus the ch. 35 RV32I listing, pp. 609-611,
+  and the Zicsr rows). Emits one image per hart from separate sources.
 3. Two-hart golden model (Python ISS): per-hart state, private memories,
    mailbox model, tb-controllable interleaving of the two instruction
    streams (the knob is smaller than SMP's, but protocol tests still need
@@ -235,7 +248,6 @@ it is defined.
 
 - Per-hart I/D ratios (working default 24 KB / 8 KB) and stack placement.
 - Mailbox depth: single slot v1 vs small FIFO.
-- Assembler pseudo-op set (li/la/mv at v1, or pure base ISA).
 - M extension timing: after M1 or after M2.
 - rtl/ subfolder layout; proposal: apu_pkg.sv at root, rtl/gfx/, rtl/sys/,
   rtl/cpu/ created with M1.

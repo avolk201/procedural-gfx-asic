@@ -22,7 +22,8 @@ Toolchain (what results are reproduced with):
   in the README and docs are measured on 5.050. The sim flow is Verilator-only:
   no Icarus Verilog or Yosys step exists in this repo.
 - python3 for the CORDIC golden model (`tb/cordic_golden.py`), which the C++
-  testbench reads as its oracle.
+  testbench reads as its oracle, and for the RV32 assembler and its shared
+  encoding tables (`tools/`, with their own golden suites).
 - Quartus Prime Standard 25.1 for synthesis, Linux or Windows only. Quartus Pro
   drops the Cyclone V family, so it cannot build this design; Standard needs no
   license for this part.
@@ -80,6 +81,9 @@ Board bring-up, flashing and the LED debug dashboard:
    bit-width argument); it now drives the plasma scene at the top.
 2. Real scenes: the plasma is in; next is a DDA raycaster with textures.
 3. The namesake: own RV32 core and assembler, memory-mapped scene registers.
+   The assembler, its encoding tables and their golden suites are in
+   (`tools/`); the two-hart core is next, contract first
+   ([docs/cpu-contract.md](docs/cpu-contract.md)).
 4. Storage: SPI SD card with a flat container format, the cartridge.
 5. Games: an interactive raycaster demo, then small original games.
 
