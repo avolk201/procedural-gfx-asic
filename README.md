@@ -1,4 +1,4 @@
-# procedural-gfx-asic
+# procedural-gfx-fpga
 
 [![CI](https://img.shields.io/github/actions/workflow/status/avolk201/procedural-gfx-asic/ci.yml?branch=main)](https://github.com/avolk201/procedural-gfx-asic/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
