@@ -4,6 +4,17 @@
 from pathlib import Path
 from dataclasses import dataclass
 
+if __package__:
+    from .rv32enc import (
+        CSR_NAMES, ENC, PRIMARY_OPCODES, pack_b, pack_fence, pack_i, pack_j,
+        pack_r, pack_s, pack_shift_i, pack_u, pack_z,
+    )
+else:
+    from rv32enc import (
+        CSR_NAMES, ENC, PRIMARY_OPCODES, pack_b, pack_fence, pack_i, pack_j,
+        pack_r, pack_s, pack_shift_i, pack_u, pack_z,
+    )
+
 # Dialect choices: bare FENCE is rw,rw; JAL requires rd; three-operand JALR
 # uses rd, rs1, offset; integer targets are relative offsets, symbols absolute.
 # Literals use int(token, 0): decimal by default, with 0x/0b/0o prefixes.
@@ -298,76 +309,84 @@ def encode_la(rd, symbol, symbol_table, pc):
         raise ValueError(f"la displacement out of 32-bit range: {relative}")
     upper = (relative + 0x800) >> 12
     lower = relative - (upper << 12)
-    upper_word = encode_u_type(upper, rd, opcode=0b0010111)
-    lower_word = encode_i_type(rd, lower, 0b000, rd, opcode=0b0010011)
+    upper_word = pack_u(parse_register(rd), upper, PRIMARY_OPCODES['OP_AUIPC'])
+    lower_word = pack_i(parse_register(rd), parse_register(rd), 0b000, lower,
+                        PRIMARY_OPCODES['OP_OPIMM'])
     return upper_word.to_bytes(4, 'little') + lower_word.to_bytes(4, 'little')
 
 def instruction_handler(mnemonic: str, operands: list, symbol_table: dict, pc=0):
-    # Handle instruction encoding based on mnemonic and operands
-    # This is a placeholder for actual instruction encoding logic
-    load_funct3 = {"LB": 0b000, "LH": 0b001, "LW": 0b010,
-                   "LBU": 0b100, "LHU": 0b101}
-    store_funct3 = {"SB": 0b000, "SH": 0b001, "SW": 0b010}
-    branch_funct3 = {"BEQ": 0b000, "BNE": 0b001, "BLT": 0b100,
-                     "BGE": 0b101, "BLTU": 0b110, "BGEU": 0b111}
-    if mnemonic in branch_funct3:
+    mnemonic = mnemonic.lower()
+    try:
+        fmt, opcode, f3, f7 = ENC[mnemonic]
+    except KeyError as error:
+        raise ValueError(f"Unknown instruction mnemonic: {mnemonic.upper()}") from error
+
+    if fmt == 'R':
         if len(operands) != 3:
-            raise ValueError(f"{mnemonic.lower()} expects rs1, rs2, target")
+            raise ValueError(f"{mnemonic} expects rd, rs1, rs2")
+        rd, rs1, rs2 = (parse_register(value) for value in operands)
+        return pack_r(rd, rs1, rs2, f3, f7, opcode)
+
+    if fmt == 'I':
+        if opcode == PRIMARY_OPCODES['OP_LOAD']:
+            if len(operands) != 2:
+                raise ValueError(f"{mnemonic} expects rd, offset(rs1)")
+            offset_text, rs1_text = parse_memory_operand(operands[1])
+            rd, rs1 = parse_register(operands[0]), parse_register(rs1_text)
+            immediate = parse_integer(offset_text)
+            try:
+                return pack_i(rd, rs1, f3, immediate, opcode)
+            except ValueError as error:
+                if 'I-type immediate out of range' in str(error):
+                    raise ValueError(f"memory offset out of range: {offset_text}") from error
+                raise
+        if opcode == PRIMARY_OPCODES['OP_JALR']:
+            if len(operands) == 2:
+                offset, rs1_text = parse_memory_operand(operands[1])
+            elif len(operands) == 3:
+                rs1_text, offset = operands[1], operands[2]
+            else:
+                raise ValueError("jalr expects rd, offset(rs1) or rd, rs1, offset")
+            return pack_i(parse_register(operands[0]), parse_register(rs1_text), f3,
+                          parse_integer(offset), opcode)
+        if len(operands) != 3:
+            raise ValueError(f"{mnemonic} expects rd, rs1, immediate")
+        rd, rs1 = parse_register(operands[0]), parse_register(operands[1])
+        if f7 is not None:
+            return pack_shift_i(rd, rs1, parse_integer(operands[2]), f3, f7, opcode)
+        return pack_i(rd, rs1, f3, parse_integer(operands[2]), opcode)
+
+    if fmt == 'S':
+        if len(operands) != 2:
+            raise ValueError(f"{mnemonic} expects rs2, offset(rs1)")
+        offset_text, rs1_text = parse_memory_operand(operands[1])
+        return pack_s(parse_register(rs1_text), parse_register(operands[0]), f3,
+                      parse_integer(offset_text), opcode)
+
+    if fmt == 'B':
+        if len(operands) != 3:
+            raise ValueError(f"{mnemonic} expects rs1, rs2, target")
         offset = resolve_pc_relative(operands[2], pc, symbol_table)
-        return encode_b_type(operands[0], operands[1], offset,
-                             branch_funct3[mnemonic], opcode=0b1100011)
-    elif mnemonic == "JAL":
+        return pack_b(parse_register(operands[0]), parse_register(operands[1]),
+                      f3, offset, opcode)
+
+    if fmt == 'U':
+        if len(operands) != 2:
+            raise ValueError(f"{mnemonic} expects rd, immediate")
+        return pack_u(parse_register(operands[0]), parse_integer(operands[1]), opcode)
+
+    if fmt == 'J':
         if len(operands) != 2:
             raise ValueError("jal expects rd, target")
         offset = resolve_pc_relative(operands[1], pc, symbol_table)
-        return encode_j_type(operands[0], offset, opcode=0b1101111)
-    elif mnemonic == "JALR":
-        if len(operands) == 2:
-            offset, rs1 = parse_memory_operand(operands[1])
-        elif len(operands) == 3:
-            rs1, offset = operands[1], operands[2]
-        else:
-            raise ValueError("jalr expects rd, offset(rs1) or rd, rs1, offset")
-        return encode_i_type(rs1, offset, 0b000, operands[0], opcode=0b1100111)
-    elif mnemonic in load_funct3:
-        if len(operands) != 2:
-            raise ValueError(f"{mnemonic.lower()} expects rd, offset(rs1)")
-        rd = operands[0]
-        offset, rs1 = parse_memory_operand(operands[1])
-        return encode_memory_i_type(rs1, offset, load_funct3[mnemonic], rd, opcode=0b0000011)
-    elif mnemonic in store_funct3:
-        if len(operands) != 2:
-            raise ValueError(f"{mnemonic.lower()} expects rs2, offset(rs1)")
-        rs2 = operands[0]
-        offset, rs1 = parse_memory_operand(operands[1])
-        return encode_s_type(rs2, rs1, offset, store_funct3[mnemonic], opcode=0b0100011)
-    elif mnemonic == "ADD":
-        # Example: add rd, rs1, rs2
-        rd, rs1, rs2 = operands
-        # Encode the instruction into machine code
-        funct_7 = 0b0000000
-        funct_3 = 0b000
-        return encode_r_type(funct_7, rs2, rs1, funct_3, rd, opcode=0b0110011)
-    elif mnemonic == "SUB":
-        # Example: sub rd, rs1, rs2
-        rd, rs1, rs2 = operands
-        # Encode the instruction into machine code
-        funct_7 = 0b0100000
-        funct_3 = 0b000
-        return encode_r_type(funct_7, rs2, rs1, funct_3, rd, opcode=0b0110011)
-    elif mnemonic == "LUI":
-        if len(operands) != 2:
-            raise ValueError("lui expects rd, immediate")
-        return encode_u_type(operands[1], operands[0], opcode=0b0110111)
-    elif mnemonic == "AUIPC":
-        if len(operands) != 2:
-            raise ValueError("auipc expects rd, immediate")
-        return encode_u_type(operands[1], operands[0], opcode=0b0010111)
-    elif mnemonic in ('ECALL', 'EBREAK'):
+        return pack_j(parse_register(operands[0]), offset, opcode)
+
+    if fmt == 'SYS0':
         if operands:
-            raise ValueError(f"{mnemonic.lower()} takes no operands")
-        return 0x00000073 if mnemonic == 'ECALL' else 0x00100073
-    elif mnemonic == 'FENCE':
+            raise ValueError(f"{mnemonic} takes no operands")
+        return 0x00000073 if mnemonic == 'ecall' else 0x00100073
+
+    if fmt == 'FENCE':
         if not operands:
             predecessor = successor = 0b0011
             fm = 0
@@ -375,143 +394,30 @@ def instruction_handler(mnemonic: str, operands: list, symbol_table: dict, pc=0)
             predecessor = parse_fence_mask(operands[0])
             successor = parse_fence_mask(operands[1])
             fm = parse_integer(operands[2]) if len(operands) == 3 else 0
-            if not 0 <= fm <= 0xF:
-                raise ValueError(f"fence fm out of range: {fm}")
         else:
             raise ValueError("fence expects no operands or predecessor, successor[, fm]")
-        return (fm << 28) | (predecessor << 24) | (successor << 20) | 0x0F
-    elif mnemonic in ('CSRRW', 'CSRRS', 'CSRRC', 'CSRRWI', 'CSRRSI', 'CSRRCI'):
+        try:
+            return pack_fence(fm, predecessor, successor, opcode)
+        except ValueError as error:
+            if 'fence field out of range' in str(error):
+                raise ValueError(f"fence fm out of range: {fm}") from error
+            raise
+
+    if fmt == 'Z':
         if len(operands) != 3:
-            raise ValueError(f"{mnemonic.lower()} expects rd, csr, rs1/zimm")
+            raise ValueError(f"{mnemonic} expects rd, csr, rs1/zimm")
         csr = parse_csr(operands[1])
-        if not 0 <= csr <= 0xFFF:
-            raise ValueError(f"CSR address out of range: {operands[1]}")
-        funct3 = {'CSRRW': 0b001, 'CSRRS': 0b010, 'CSRRC': 0b011,
-                  'CSRRWI': 0b101, 'CSRRSI': 0b110, 'CSRRCI': 0b111}[mnemonic]
-        if mnemonic.endswith('I'):
-            zimm = parse_integer(operands[2])
-            if not 0 <= zimm <= 31:
-                raise ValueError(f"CSR immediate out of range: {operands[2]}")
-            rs1 = zimm
-        else:
-            rs1 = parse_register(operands[2])
-        rd = parse_register(operands[0])
-        return (csr << 20) | (rs1 << 15) | (funct3 << 12) | (rd << 7) | 0b1110011
-    elif mnemonic == "SLL":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b001, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "SLT":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b010, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "SLTU":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b011, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "XOR":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b100, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "SRL":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b101, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "SRA":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0100000, rs2=operands[2], rs1=operands[1], funct_3=0b101, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "OR":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b110, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "AND":
-        # Encode the instruction into machine code
-        return encode_r_type(funct_7=0b0000000, rs2=operands[2], rs1=operands[1], funct_3=0b111, rd=operands[0], opcode=0b0110011)
-    elif mnemonic == "ADDI":
-        # Example: addi rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b000
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "SLTI":
-        # Example: slti rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b010
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "SLTIU":
-        # Example: sltiu rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b011
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "XORI":
-        # Example: xori rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b100
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "ORI":
-        # Example: ori rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b110
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "ANDI":
-        # Example: andi rd, rs1, imm
-        rd, rs1, imm = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b111
-        return encode_i_type(rs1, imm, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "SLLI":
-        # Example: slli rd, rs1, shamt
-        rd, rs1, shamt = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b001
-        return encode_shift_i_type(rs1, shamt, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "SRLI":
-        # Example: srli rd, rs1, shamt
-        rd, rs1, shamt = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b101
-        return encode_shift_i_type(rs1, shamt, funct_3, rd, opcode=0b0010011)
-    elif mnemonic == "SRAI":
-        # Example: srai rd, rs1, shamt
-        rd, rs1, shamt = operands
-        # Encode the instruction into machine code
-        funct_3 = 0b101
-        return encode_shift_i_type(rs1, shamt, funct_3, rd, opcode=0b0010011, funct_7=0b0100000)
-    else:
-        raise ValueError(f"Unknown instruction mnemonic: {mnemonic}")
+        source = parse_integer(operands[2]) if mnemonic.endswith('i') else parse_register(operands[2])
+        try:
+            return pack_z(parse_register(operands[0]), csr, f3, source, opcode)
+        except ValueError as error:
+            if 'CSR address out of range' in str(error):
+                raise ValueError(f"CSR address out of range: {operands[1]}") from error
+            if 'CSR immediate out of range' in str(error):
+                raise ValueError(f"CSR immediate out of range: {operands[2]}") from error
+            raise
 
-def encode_r_type(funct_7, rs2, rs1, funct_3, rd, opcode):
-    rs1_num = parse_register(rs1)
-    rs2_num = parse_register(rs2)
-    rd_num = parse_register(rd)
-    instruction = (funct_7 << 25) | (rs2_num << 20) | (rs1_num << 15) | (funct_3 << 12) | (rd_num << 7) | opcode
-    return instruction
-
-def encode_i_type(rs1, imm, funct_3, rd, opcode):
-    rs1_num = parse_register(rs1)
-    rd_num = parse_register(rd)
-    imm_num = parse_integer(imm)
-    if not -2048 <= imm_num <= 2047:
-        raise ValueError(f"I-type immediate out of range: {imm}")
-    imm_num &= 0xFFF
-    instruction = (imm_num << 20) | (rs1_num << 15) | (funct_3 << 12) | (rd_num << 7) | opcode
-    return instruction
-
-
-def encode_memory_i_type(rs1, offset, funct_3, rd, opcode):
-    offset_num = parse_integer(offset)
-    if not -2048 <= offset_num <= 2047:
-        raise ValueError(f"memory offset out of range: {offset}")
-    return encode_i_type(rs1, offset_num, funct_3, rd, opcode)
-
-
-def encode_s_type(rs2, rs1, offset, funct_3, opcode):
-    rs1_num = parse_register(rs1)
-    rs2_num = parse_register(rs2)
-    offset_num = parse_integer(offset)
-    if not -2048 <= offset_num <= 2047:
-        raise ValueError(f"store offset out of range: {offset}")
-    immediate = offset_num & 0xFFF
-    return (((immediate >> 5) << 25) | (rs2_num << 20) | (rs1_num << 15)
-            | (funct_3 << 12) | ((immediate & 0x1F) << 7) | opcode)
+    raise AssertionError(f"unsupported ENC format: {fmt}")
 
 
 def resolve_pc_relative(target, pc, symbol_table):
@@ -521,40 +427,6 @@ def resolve_pc_relative(target, pc, symbol_table):
         return parse_integer(target)
     except ValueError as error:
         raise ValueError(f"undefined symbol: {target}") from error
-
-
-def encode_b_type(rs1, rs2, offset, funct_3, opcode):
-    rs1_num = parse_register(rs1)
-    rs2_num = parse_register(rs2)
-    offset_num = parse_integer(offset)
-    if offset_num & 1:
-        raise ValueError(f"odd branch offset: {offset_num}")
-    if not -4096 <= offset_num <= 4094:
-        raise ValueError(f"branch offset out of range: {offset_num}")
-    immediate = offset_num & 0x1FFF
-    return (((immediate >> 12) & 1) << 31) | (((immediate >> 5) & 0x3F) << 25) \
-        | (rs2_num << 20) | (rs1_num << 15) | (funct_3 << 12) \
-        | (((immediate >> 1) & 0xF) << 8) | (((immediate >> 11) & 1) << 7) | opcode
-
-
-def encode_j_type(rd, offset, opcode):
-    rd_num = parse_register(rd)
-    offset_num = parse_integer(offset)
-    if offset_num & 1:
-        raise ValueError(f"odd jump offset: {offset_num}")
-    if not -(1 << 20) <= offset_num <= (1 << 20) - 2:
-        raise ValueError(f"jump offset out of range: {offset_num}")
-    immediate = offset_num & 0x1FFFFF
-    return (((immediate >> 20) & 1) << 31) | (((immediate >> 1) & 0x3FF) << 21) \
-        | (((immediate >> 11) & 1) << 20) | (((immediate >> 12) & 0xFF) << 12) \
-        | (rd_num << 7) | opcode
-
-
-def encode_u_type(immediate, rd, opcode):
-    imm_num = parse_integer(immediate)
-    if not -(1 << 19) <= imm_num < (1 << 20):
-        raise ValueError(f"U-type immediate out of range: {immediate}")
-    return ((imm_num & 0xFFFFF) << 12) | (parse_register(rd) << 7) | opcode
 
 
 def parse_fence_mask(mask):
@@ -580,12 +452,6 @@ def parse_memory_operand(operand):
     if not register:
         raise ValueError(f"missing base register in memory operand: {operand}")
     return (parse_integer(offset_text) if offset_text else 0), register
-
-def encode_shift_i_type(rs1, shamt, funct_3, rd, opcode, funct_7=0):
-    shamt_num = parse_integer(shamt)
-    if not 0 <= shamt_num <= 31:
-        raise ValueError(f"Shift amount out of range: {shamt}")
-    return encode_i_type(rs1, (funct_7 << 5) | shamt_num, funct_3, rd, opcode)
 
 def parse_integer(token):
     if isinstance(token, int):
@@ -623,9 +489,6 @@ ABI_REGISTERS = {
     's7': 23, 's8': 24, 's9': 25, 's10': 26, 's11': 27,
     't3': 28, 't4': 29, 't5': 30, 't6': 31,
 }
-
-
-CSR_NAMES = {'mhartid': 0xF14}
 
 
 def parse_csr(csr):
