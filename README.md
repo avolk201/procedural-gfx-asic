@@ -15,6 +15,16 @@ drives a three-grating plasma scene; the current build (D18 DE alignment)
 closed timing at worst setup slack +14.012 ns, Slow 1100mV 100C, and ran on
 the board 2026-09-25. There is still no RV32 core.
 
+### What works today:
+- 640x480 VGA/HDMI output from procedural pixel generation, verified in Verilator and run on DE10-Nano.
+- Pipelined CORDIC checked against Python golden model for all 65536 phases.
+- Timing closed: +14.012 ns worst setup slack, Slow 1100mV 100C.
+
+### What is not done:
+- No RV32 core yet.
+- No interactive game demo yet.
+- No I2S or SD support yet.
+
 Toolchain (what results are reproduced with):
 
 - Verilator 5.050 for every `make sim*` and `make lint*` target. The CI runner
