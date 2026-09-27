@@ -55,7 +55,7 @@ hart0 segment (game):
 |---|---|---|---|
 | 0x0000_0000 | 24 KB | M10K, hart0 I-RAM | $readmemh firmware0.hex |
 | 0x0000_6000 | 8 KB | M10K, hart0 D-RAM | data, bss, stack |
-| 0x4000_0000 | 32 B | fabric flops | hart0 regif, section 5 |
+| 0x4000_0000 | 96 B | fabric flops | hart0 regif, section 5; 0x50-0x5C reserved, math coprocessor (section 7.2) |
 
 hart1 segment (APU service):
 
@@ -100,7 +100,11 @@ semantics as hart0's):
 | 0x00 | SCENE_SELECT | W | scene mux; write-then-toggle to the pixel domain, SOF-gated |
 | 0x04 | PIPELINE_ENABLE | W | gates the pixel pipeline |
 | 0x08-0x1C | CAMERA_* | W | reserved, lands with the raycaster |
-| 0x20-0x3F | AUDIO_* | RW | reserved, Phase 6 device (section 7) |
+| 0x20-0x3F | AUDIO_* | RW | reserved, Phase 6 device (section 7.1) |
+| 0x50 | CORDIC_PHASE | W | write starts a conversion (section 7.2) |
+| 0x54 | CORDIC_STATUS | R | bit 0: busy |
+| 0x58 | CORDIC_SIN | R | signed Q2.22, sign-extended |
+| 0x5C | CORDIC_COS | R | signed Q2.22, sign-extended |
 
 Mailbox protocol v1: one 32-bit slot per direction. Writer: DATA, then SET;
 writing SET while the slot is full is a protocol violation and a tb-checked
@@ -143,7 +147,9 @@ it is defined.
   initializes its own bss and stack, optionally seeds the mailbox, then
   writes HART1_RELEASE=1; hart1 runs firmware1 from its own reset vector.
 
-## 7. Audio device reservation (Phase 6, decided placement)
+## 7. Device reservations
+
+### 7.1 Audio (Phase 6, decided placement)
 
 - The PSG (2x square with duty select, triangle, LFSR noise, envelopes) and
   the I2S TX are their own device on hart1's map, not CPU-computed samples
@@ -155,6 +161,34 @@ it is defined.
   report_metastability computes its MTBF (lesson of the 2026-09-25 run).
 - Golden model and tb per roadmap Phase 6: tone frequency from divider
   registers, envelope shape, WAV dumped from sim.
+
+### 7.2 Math coprocessor (CORDIC, decided 2026-09-25: reserve now, build after M1)
+
+- The peripheral is one more apu_cordic instance in the 50 MHz domain
+  behind the regif, so no new CDC; the pixel-domain instances stay
+  dedicated to scanout at 1 sample/clk and are never shared.
+- Protocol: write CORDIC_PHASE (Q0.16 turns) to start; busy is high for
+  19 clk (the B18 system latency; 380 ns at 50 MHz); CORDIC_SIN/CORDIC_COS
+  read back signed Q2.22, |result| <= 1, max |err| vs libm 3.172e-05
+  measured (apu_cordic header, sim_cordic). One slot; writing PHASE while
+  busy is a protocol violation and a tb-checked claim, the mailbox
+  philosophy.
+- Ownership follows AMP: per-hart instances, never a shared one, so the
+  single-writer rule holds with no arbitration. hart1 wires first (camera
+  math is the first measured customer); a hart0 instance lands only on
+  measured need. Offsets are reserved in both segments.
+- A software CORDIC ships in the SDK regardless: the fallback for a hart
+  without an instance, and one leg of the three-way cross-check (Python
+  golden model = software routine = peripheral, bit-exact over all 65536
+  phases).
+- Verification: the wrapper tb replays sim/cordic_golden.hex through a bus
+  model and requires bit-exact agreement; mutation targets are the busy
+  window, the violation flag, and readback. The math surface adds nothing
+  new to verify: apu_cordic is the most-proven RTL in the repo, so the
+  wrapper's only new claims are bus-protocol ones.
+- Area estimate 500-600 ALMs per instance, inferred from the D18 fit (2067
+  ALMs total with three instances and the whole video chain); the first
+  compile that includes it measures it properly.
 
 ## 8. Crossing rules (pixel domain, unchanged from rev 2)
 
