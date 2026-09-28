@@ -53,6 +53,21 @@ lint_top: rtl/apu_pkg.sv rtl/apu_vga_timing.sv rtl/apu_cordic.sv rtl/apu_colorba
 lint_cordic: rtl/apu_cordic.sv
 	verilator --lint-only -Wall --top-module apu_cordic rtl/apu_cordic.sv
 
+golden:
+	python3 tb/cordic_golden.py
+
+tools-tests:
+	python3 tools/tests/test_rv32asm.py
+	python3 tools/tests/test_rv32enc.py
+
+# Serial on purpose: every Verilator target builds into obj_dir, and
+# $(MAKE) -j1 defeats an inherited -j from `make -j8 regress`.
+GATES = lint lint_top lint_cordic lint_i2c sim sim_i2c sim_config golden sim_cordic sim_plasma tools-tests
+
+regress:
+	@for t in $(GATES); do printf "== %s\n" $$t; $(MAKE) -j1 $$t || exit 1; done
+	@echo "regress: all gates green"
+
 # Clean up build artifacts
 clean:
 	rm -rf obj_dir
@@ -61,4 +76,4 @@ clean:
 
 # sim/ and obj_dir/ are real directories, so the run targets must be phony
 # or make treats them as up to date on a rerun
-.PHONY: sim sim_plasma sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic clean
+.PHONY: sim sim_plasma sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic regress tools-tests golden clean

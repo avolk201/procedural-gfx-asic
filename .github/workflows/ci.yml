@@ -39,3 +39,6 @@ jobs:
 
       - name: Run plasma scene look check
         run: make sim_plasma
+
+      - name: Run RV32 assembler and encoding golden suites
+        run: make tools-tests
