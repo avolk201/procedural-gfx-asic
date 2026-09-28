@@ -28,6 +28,17 @@ sim_plasma: $(RTL) tb/sim_plasma.cpp
 	verilator --cc --exe --build -Wall --top-module apu_top -GSCENE=1 $(RTL) tb/sim_plasma.cpp -o sim_plasma
 	./obj_dir/sim_plasma
 
+# Randomized-reset tier: kills reliance on zero-init state machines. Verilator
+# stays 2-state; this is a seed sweep, not X-propagation. 5 seeds green on
+# sim, plasma and cordic harnesses, measured 2026-09-28.
+XSEEDS = 1 2 3 4 5
+
+xprop: $(RTL) tb/sim_main.cpp
+	@mkdir -p sim
+	verilator --cc --exe --build -Wall --top-module apu_top --x-initial unique --x-assign unique $(RTL) tb/sim_main.cpp -o sim_xprop
+	@for s in $(XSEEDS); do ./obj_dir/sim_xprop +verilator+rand+reset+2 +verilator+seed+$$s > /dev/null || { echo "xprop: FAIL seed $$s"; exit 1; }; done
+	@echo "xprop: all seeds green"
+
 # sim/cordic_golden.hex is generated from the model, so a stale file can never
 # cross-check the RTL: make rebuilds it whenever cordic_golden.py changes.
 sim/cordic_golden.hex: tb/cordic_golden.py
@@ -76,4 +87,4 @@ clean:
 
 # sim/ and obj_dir/ are real directories, so the run targets must be phony
 # or make treats them as up to date on a rerun
-.PHONY: sim sim_plasma sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic regress tools-tests golden clean
+.PHONY: sim sim_plasma sim_i2c sim_config sim_cordic lint lint_i2c lint_top lint_cordic regress tools-tests golden xprop clean
