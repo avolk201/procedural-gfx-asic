@@ -10,6 +10,8 @@ set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
 # attribute is Synplify's and Quartus ignores it.
 set_instance_assignment -name SYNCHRONIZER_IDENTIFICATION FORCED -to "tgl_sync[1]"
 set_instance_assignment -name SYNCHRONIZATION_REGISTER_CHAIN_LENGTH 2 -to "tgl_sync[1]"
+set_instance_assignment -name SYNCHRONIZER_IDENTIFICATION FORCED -to "u_sync_rst_pix|d[1]"
+set_instance_assignment -name SYNCHRONIZATION_REGISTER_CHAIN_LENGTH 2 -to "u_sync_rst_pix|d[1]"
 
 # Source files
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/apu_pkg.sv

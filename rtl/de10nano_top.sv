@@ -129,7 +129,7 @@ module de10nano_top (
         else if (apu_sof)      pix_alive_tgl <= ~pix_alive_tgl;
     end
 
-    (* syncthreads = "true" *) logic [1:0] tgl_sync;
+    logic [1:0] tgl_sync;
     logic [4:0] alive_div;
     logic led_alive;
     always_ff @(posedge clk_50m_i or negedge rst_50m_n) begin

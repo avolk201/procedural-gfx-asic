@@ -8,7 +8,6 @@ module sync_reset (
     output logic rst_sync_n_o
 );
 
-(* syncthreads = "true" *)
 /* verilator lint_off SYNCASYNCNET */
 logic [1:0] d;
 
