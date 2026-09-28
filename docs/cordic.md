@@ -64,10 +64,9 @@ rather than silently depending on "it never got big enough."
 ## Measurements > Derivation
 
 The datapath is a fold/load register, then N = 16 iteration registers, then the
-quadrant select pipelined out through `cos_mid`/`sin_mid`. That structure is
-*roughly* 18 cycles and is easy to miscount by one (the fold itself is
-combinational, so it adds no stage; there are two output registers, not one).
-The repo does not trust that sum: `sim_cordic` check E drives the pipeline,
+quadrant select pipelined out through `cos_mid`/`sin_mid`: 1 + 16 + 2 = 19
+register stages, so registered-in to registered-out is 19 system clocks. The
+repo does not trust that sum either: `sim_cordic` check E drives the pipeline,
 watches when `vld_o` first rises behind `vld_i`, and asserts the measured fill
 equals the declared 18. If a stage is added or removed, E fails and forces the
 number and the header comment to be reconciled. Throughput is one sample per
@@ -116,9 +115,8 @@ fails on correct hardware.
 
 Nothing at the core itself, as of 2026-09-25. This section used to say the
 CORDIC had never driven a pixel on the board; the plasma scene made that
-stale. Three `apu_cordic` instances feed rtl/apu_plasma.sv, the module is in
-the Quartus file list, and the build ran on hardware 2026-09-25 (.sof
-0x00E40517): divclk Fmax 72.14 MHz against the 25.175 required, worst setup
-slack +14.032 ns, full-width image on one OLED (B17). The open items around
-it are integration-level, not math-core defects: DE alignment to the VESA
-window (D18) and the demo GIF pipeline (phase 4.5).
+stale. The numbers are the D18 re-verification (B18): .sof 0x00E4BE7C, 
+divclk Fmax 72.79 MHz against the 25.175 required, worst setup slack +14.012 ns,
+DE overlap 0 in both scenes, image unchanged on the same OLED. Open items are
+integration-level: the phase 4.5 raycaster GIF still gates the phase;
+the plasma stepping-stone GIF shipped in v0.2.0.

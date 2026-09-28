@@ -51,6 +51,20 @@ Reproducing the simulations needs only Verilator and python3: `make sim`,
 `sim_i2c`, `sim_config`, `sim_cordic` and `sim_plasma` all run without Quartus
 or the board.
 
+## Architecture
+
+<img src="docs/block_diagram.png" alt="Block diagram: board oscillator into clock generation, then a timing and prefetch generator feeding a plasma scene built from three parallel CORDIC gratings, through an output mux and pads to the ADV7513 HDMI transmitter and monitor; a config walker drives an I2C master into the transmitter; a planned CPU path shows an RV32I Zicsr core with hart0 I/D RAM, scene registers, an SD loader and a host-side assembler" width="849">
+
+*Solid blue is implemented fabric, dashed is planned per
+[docs/cpu-contract.md](docs/cpu-contract.md), green is host tooling. The scene
+consumes the prefetch window DEPTH clocks ahead of the beam (plasma 19,
+colorbars 1) and its de_o lands on the active window; syncs run from the
+timing block to the pads without passing through pixel logic. No framebuffer
+exists: a pixel lives for one clock, and scene state is x, y and a frame
+counter. Budget: 307,200 active of 420,000 pixel clocks per frame at
+25.175 MHz, 18.432 Mpx/s, and the three parallel CORDICs retire one sample
+per clock.*
+
 ## How to read this repo
 
 Start with the status line and the two images below: that is the whole result,
@@ -90,6 +104,32 @@ phone video re-encoded to 640x360 H.264 at 30 fps, metadata stripped.
 
 Board bring-up, flashing and the LED debug dashboard:
 [docs/deploy.md](docs/deploy.md).
+
+## Evidence and provenance
+
+| Artifact | sha256 | Size (bytes) | Origin |
+|---|---|---|---|
+| docs/frame.png | 124deeaa3182627197bb532f89333020d5d2192bcecb2faf1958bef5357fccc3 | 5,007 | `make sim` capture, converted with `python3 tb/ppm2png.py` |
+| docs/plasma.gif | 5633f894fbd061a484360c5da1cdfe8dfcd3fecccd6b525abaded5128fc6e5f0 | 1,329,888 | 60 Verilator captures (`+frame=1..60`), palette-encoded 20 fps; every frame byte-identical on round-trip (v0.2.0 notes) |
+| docs/plasma-bring-up.mp4 | 995ec06c98bd33a7c509af5f57c5f3fe7c85f9d64badaa1a0880501b8da226c9 | 588,044 | phone video, re-encoded 640x360 H.264 30 fps, metadata stripped |
+| sim/plasma_frame.ppm | de1ba72984e9b53ca14021e719c7b1a81c3d6a4b5813e31659753a3fa8e775b7 | 921,615 | `make sim_plasma` one-frame capture; the B18 control hash, re-run 2026-09-28 and equal |
+
+The media metadata was stripped on purpose (privacy), which also removes
+capture time and device. The hashes above plus the dated devlog entries are
+what carry provenance; the v0.1.0 phone photo lives in the release assets,
+its EXIF stripped too.
+
+What was not measured, stated as absence:
+- Monitor model (2026-09-23) and OLED model (2026-09-25) are unrecorded.
+- No oscilloscope capture of pixel clock or syncs; timing evidence is the
+  counter measurements in `make sim` plus a picture on a live display.
+- No logic-analyzer capture of the physical I2C bus; wire-level claims come
+  from sim_i2c's closed-loop model, and the hardware evidence is the
+  ADV7513 ACKing all 13 writes (devlog bring-up, 2026-09-23).
+- No ADV7513 register readback; the walker is write-only by design.
+- Endurance unmeasured; longest continuous run is not logged.
+- Hot-plug after configuration untested; only the power-up HPD ordering
+  claim is established (B15).
 
 ## Where this is going
 
