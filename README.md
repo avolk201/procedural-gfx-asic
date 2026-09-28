@@ -15,15 +15,22 @@ drives a three-grating plasma scene; the current build (D18 DE alignment)
 closed timing at worst setup slack +14.012 ns, Slow 1100mV 100C, and ran on
 the board 2026-09-25. There is still no RV32 core.
 
-### What works today:
-- 640x480 VGA/HDMI output from procedural pixel generation, verified in Verilator and run on DE10-Nano.
-- Pipelined CORDIC checked against Python golden model for all 65536 phases.
-- Timing closed: +14.012 ns worst setup slack, Slow 1100mV 100C.
+### Proof table
 
-### What is not done:
-- No RV32 core yet.
-- No interactive game demo yet.
-- No I2S or SD support yet.
+| Claim | Command | Numbers | Artifact |
+|---|---|---|---|
+| Zero-warning lint, all RTL | `make lint_top` | Verilator 5.050, -Wall, clean | console |
+| VGA timing + pixel pipeline | `make sim` | HSync 96 px, VSync 2 lines, frame 420,000 cycles, DE during HSync 0, capture 307,200 px | docs/frame.png, sha256 124deeaa... |
+| CORDIC math core | `python3 tb/cordic_golden.py`, `make sim_cordic` | bit-exact vs model over all 65,536 phases; max \|err\| vs libm 3.172e-05; 24 + 14 checks | console |
+| Plasma scene, D18 latency | `make sim_plasma` | frame re-captured 2026-09-28 byte-identical to the B18 control, sha256 de1ba729... | docs/plasma.gif, sha256 5633f894... |
+| I2C controller | `make sim_i2c` | 21 checks, wire bytes {72,41,00}/{70,41,00} bit-exact, 14,998 cycles/transaction | console |
+| ADV7513 config walker | `make sim_config` | 7 checks, halted-on-error path included | console |
+| Timing closure (D18 build, 9f5dc7b) | `quartus_sh --flow compile` on Quartus 25.1 | worst setup +14.012 / hold +0.168 / recovery +16.599 / removal +0.698 / mpw +1.241 ns, TNS 0.000, Slow 1100mV 100C; divclk Fmax 72.79 MHz; 2,067/41,910 ALMs, 3/112 DSP, 0 M10K, 1/6 PLL | sta.rpt |
+| Runs on hardware | `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | colorbars 2026-09-23; plasma on OLED 2026-09-25, .sof 0x00E4BE7C, unchanged after D18 | v0.1.0 photo; docs/plasma-bring-up.mp4, sha256 995ec06c... |
+| CPU tooling, no core | `python3 tools/tests/test_rv32asm.py`, `python3 tools/tests/test_rv32enc.py` | 101 + 246 checks vs spec-derived vectors (unpriv vol. 20250508 ch. 35) | console |
+
+Not done: no RV32 core (contract and ladder in docs/cpu-contract.md), no
+interactive demo, no I2S, no SD.
 
 Toolchain (what results are reproduced with):
 
