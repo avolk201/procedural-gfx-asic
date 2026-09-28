@@ -1,9 +1,9 @@
 # procedural-gfx-fpga
 
-[![CI](https://img.shields.io/github/actions/workflow/status/avolk201/procedural-gfx-asic/ci.yml?branch=main)](https://github.com/avolk201/procedural-gfx-asic/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/avolk201/procedural-gfx-fpga/ci.yml?branch=main)](https://github.com/avolk201/procedural-gfx-fpga/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Framebuffer-less procedural graphics accelerator for an RV32IMAC SoC.
+Framebuffer-less procedural graphics accelerator for a future two-hart RV32I_Zicsr SoC (docs/cpu-contract.md).
 Pixels are computed during active scanout instead of stored in SRAM.
 
 Status, 2026-09-25: phases 1 through 3 are done and phase 4 has its first
@@ -50,7 +50,7 @@ Start with the status line and the two images below: that is the whole result,
 verified in simulation and on the board. For the verification detail, read
 [docs/verification.md](docs/verification.md); it lists what each make target
 checks and the rules the harnesses follow. For how bugs are found and closed,
-read [docs/devlog.md](docs/devlog.md), entries B13 through B17.
+read [docs/devlog.md](docs/devlog.md), entries B13 through B19.
 
 <img src="docs/plasma.gif" alt="A boiling plasma pattern in saturated red, green and blue hues, computed per pixel at 640x480" width="640">
 
@@ -67,7 +67,7 @@ and converted to PNG (`make sim`). The known-good bring-up reference.*
 
 First bring-up on silicon, 2026-09-23: the same bars on a TV off the
 DE10-Nano, through the onboard ADV7513. The phone photo is in the
-[v0.1.0 release](https://github.com/avolk201/procedural-gfx-asic/releases/tag/v0.1.0).
+[v0.1.0 release](https://github.com/avolk201/procedural-gfx-fpga/releases/tag/v0.1.0).
 
 Plasma on the OLED, 2026-09-25: [docs/plasma-bring-up.mp4](docs/plasma-bring-up.mp4),
 phone video re-encoded to 640x360 H.264 at 30 fps, metadata stripped.
