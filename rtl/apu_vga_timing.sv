@@ -76,6 +76,45 @@ module apu_vga_timing #(
 		sof_pre_next = (h_cnt_next == apu_pkg::coord_t'(PRE_START)) && v_wrap;
 	end
 
+	logic [7:0]  hsync_low_cnt;
+	logic [11:0] vsync_low_cnt;
+	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
+		if (!rst_n_i) begin
+			hsync_low_cnt <= '0;
+			vsync_low_cnt <= '0;
+		end else begin
+			hsync_low_cnt <= hsync_o ? '0 : hsync_low_cnt + 1'b1;
+			vsync_low_cnt <= vsync_o ? '0 : vsync_low_cnt + 1'b1;
+		end
+	end
+
+	logic hsync_o_d, vsync_o_d;
+	logic hsync_seen_fall, vsync_seen_fall;
+	always_ff @(posedge clk_pix_i) begin
+		hsync_o_d <= hsync_o;
+		vsync_o_d <= vsync_o;
+		hsync_seen_fall <= hsync_seen_fall || (hsync_o_d && !hsync_o);
+		vsync_seen_fall <= vsync_seen_fall || (vsync_o_d && !vsync_o);
+	end
+
+	property p_hsync_width;
+		@(posedge clk_pix_i)
+		(hsync_o && !hsync_o_d) && hsync_seen_fall |-> hsync_low_cnt == 8'(apu_pkg::HSYNC_WIDTH);
+	endproperty
+	assert property (p_hsync_width) else $error("HSync width violation");
+
+	property p_vsync_width;
+		@(posedge clk_pix_i)
+		(vsync_o && !vsync_o_d) && vsync_seen_fall |-> vsync_low_cnt == 12'(apu_pkg::VSYNC_WIDTH * apu_pkg::H_TOTAL);
+	endproperty
+	assert property (p_vsync_width) else $error("VSync width violation");
+
+	property p_de_not_in_hsync;
+		@(posedge clk_pix_i)
+		!(de_o && !hsync_o);
+	endproperty
+	assert property (p_de_not_in_hsync) else $error("DE during HSync violation");
+
 	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
 		if (!rst_n_i) begin
 			h_cnt <= '0;

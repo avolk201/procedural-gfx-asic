@@ -43,6 +43,40 @@ module i2c_controller #(
     logic [2:0] bit_cnt;
     logic       phase;
     logic [7:0] tx_byte;
+    logic scl_oe_d, sda_oe_d;
+    state_t state_d;
+    always_ff @(posedge clk_i) begin
+        scl_oe_d <= scl_oe;
+        sda_oe_d <= sda_oe;
+        state_d  <= state;
+    end
+
+    localparam logic [15:0] SCL_LOW_EXPECT = CLK_DIV[15:0];
+    logic [15:0] scl_low_cnt;
+    always_ff @(posedge clk_i or negedge rst_n_i) begin
+        if (!rst_n_i)
+            scl_low_cnt <= '0;
+        else
+            scl_low_cnt <= scl_oe ? scl_low_cnt + 1'b1 : '0;
+    end
+
+    property p_scl_low_width;
+        @(posedge clk_i)
+        (scl_oe_d && !scl_oe) |-> scl_low_cnt == SCL_LOW_EXPECT;
+    endproperty
+    assert property (p_scl_low_width) else $error("SCL low width violation");
+
+    property p_sda_stable_while_scl_high;
+        @(posedge clk_i)
+        (sda_oe != sda_oe_d) |->
+            (scl_oe && !scl_oe_d) || state_d == START ||
+            state_d == STOP;
+    endproperty
+    assert property (p_sda_stable_while_scl_high)
+        else $error("SDA changed while SCL high");
+
+
+
 
     always_comb begin
         case (byte_idx)
