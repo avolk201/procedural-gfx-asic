@@ -42,3 +42,6 @@ jobs:
 
       - name: Run RV32 assembler, encoder, and ISS suites
         run: make tools-tests
+
+      - name: Run coverage tier with floors
+        run: make coverage

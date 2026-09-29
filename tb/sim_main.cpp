@@ -8,6 +8,7 @@
 
 #include "Vapu_top.h"
 #include "verilated.h"
+#include "verilated_cov.h"
 #include <cstdio>
 #include <cstdint>
 
@@ -163,5 +164,8 @@ int main(int argc, char **argv) {
 
     printf("%s\n", fails ? "FAIL" : "SUCCESS");
     delete tb;
+#if VM_COVERAGE
+    Verilated::threadContextp()->coveragep()->write("sim/coverage.dat");
+#endif
     return fails ? 1 : 0;
 }

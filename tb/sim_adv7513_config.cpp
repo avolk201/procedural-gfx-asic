@@ -5,6 +5,7 @@
 
 #include "Vtb_adv7513_config.h"
 #include "verilated.h"
+#include "verilated_cov.h"
 #include <cstdio>
 #include <cstdint>
 #include <vector>
@@ -213,5 +214,8 @@ int main(int argc, char **argv) {
     run_test({"T2 error injection: NACK transaction 1", 1});
 
     std::printf("\nSummary: %d failed out of %d checks\n", g_fail_count, g_checks_run);
+#if VM_COVERAGE
+    Verilated::threadContextp()->coveragep()->write("sim/coverage.dat");
+#endif
     return g_fail_count ? 1 : 0;
 }

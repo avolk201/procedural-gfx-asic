@@ -33,6 +33,7 @@
 
 #include "Vapu_cordic.h"
 #include "verilated.h"
+#include "verilated_cov.h"
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -286,5 +287,8 @@ int main(int argc, char **argv) {
     }
 
     std::printf("\nSummary: %d failed out of %d checks\n", g_fail_count, g_checks_run);
+#if VM_COVERAGE
+    Verilated::threadContextp()->coveragep()->write("sim/coverage.dat");
+#endif
     return g_fail_count ? 1 : 0;
 }

@@ -23,6 +23,7 @@
 
 #include "Vi2c_controller.h"
 #include "verilated.h"
+#include "verilated_cov.h"
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
@@ -335,5 +336,8 @@ int main(int argc, char **argv) {
     run_test({"T2 wrong address: dev 0x38, target NACKs byte 1", DEV_ADDR_BAD, NACK_ADDR, true});
 
     std::printf("\nSummary: %d failed out of %d checks\n", g_fail_count, g_checks_run);
+#if VM_COVERAGE
+    Verilated::threadContextp()->coveragep()->write("sim/coverage.dat");
+#endif
     return g_fail_count ? 1 : 0;
 }
