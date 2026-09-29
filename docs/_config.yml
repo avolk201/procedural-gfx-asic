@@ -1,5 +1,5 @@
-title: "Alana Volkov: FPGA Notes"
-description: "Engineering notes on FPGA bring-up, verification, timing closure, and RV32 tooling."
+title: "Engineering Notes: RV32 SoC and Framebuffer-less Graphics"
+description: "Technical post-mortems for the procedural-gfx-fpga repository. Documents architectural decisions, static timing analysis, and verification methodology for a framebuffer-less graphics pipeline and RV32I_Zicsr core on the Terasic DE10-Nano (Cyclone V). All entries are tied to specific commit hashes and reproduction commands."
 markdown: kramdown
 permalink: /blog/:year/:month/:day/:title/
 timezone: Australia/Sydney
