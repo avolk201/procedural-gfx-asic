@@ -83,8 +83,11 @@ regress:
 	@for t in $(GATES); do printf "== %s\n" $$t; $(MAKE) -j1 $$t || exit 1; done
 	@echo "regress: all gates green"
 
-# Coverage tier: build every harness with --coverage into its own Mdir under
-# sim/ (gitignored), run each with a per-target dat, merge, enforce floors.
+# Coverage tier: build every harness with --coverage into obj_dir (the same
+# dir the sim targets use; a nested --Mdir breaks the harness path on the CI
+# Verilator, which does not rewrite it relative to Mdir), run each, move its
+# dat, merge, enforce floors. Serial: each build replaces obj_dir before its
+# run, so interleaving build/run/mv per target is safe.
 # Floors are baseline minus margin (B10 convention): measured 2026-09-29 and
 # recorded in docs/verification.md. Tighten with a new measurement, never
 # loosen without one.
@@ -93,20 +96,20 @@ COV_TOGGLE_FLOOR = 84
 
 coverage: sim/cordic_golden.hex
 	@mkdir -p sim/cov
-	verilator --cc --exe --build -Wall --coverage --top-module apu_top --Mdir sim/obj_cov_apu $(RTL) tb/sim_main.cpp -o sim_cov_apu
-	verilator --cc --exe --build -Wall --coverage --top-module apu_top --Mdir sim/obj_cov_plasma -GSCENE=1 $(RTL) tb/sim_plasma.cpp -o sim_cov_plasma
-	verilator --cc --exe --build -Wall --coverage --top-module i2c_controller --Mdir sim/obj_cov_i2c rtl/i2c_controller.sv tb/sim_i2c.cpp -o sim_cov_i2c
-	verilator --cc --exe --build -Wall --coverage --top-module tb_adv7513_config --Mdir sim/obj_cov_config tb/tb_adv7513_config.sv rtl/adv7513_config.sv rtl/i2c_controller.sv tb/sim_adv7513_config.cpp -o sim_cov_config
-	verilator --cc --exe --build -Wall --coverage --top-module apu_cordic --Mdir sim/obj_cov_cordic rtl/apu_cordic.sv tb/sim_cordic.cpp -o sim_cov_cordic
-	./sim/obj_cov_apu/sim_cov_apu
+	verilator --cc --exe --build -Wall --coverage --top-module apu_top $(RTL) tb/sim_main.cpp -o sim_cov_apu
+	./obj_dir/sim_cov_apu
 	mv sim/coverage.dat sim/cov/apu.dat
-	./sim/obj_cov_plasma/sim_cov_plasma
+	verilator --cc --exe --build -Wall --coverage --top-module apu_top -GSCENE=1 $(RTL) tb/sim_plasma.cpp -o sim_cov_plasma
+	./obj_dir/sim_cov_plasma
 	mv sim/coverage.dat sim/cov/plasma.dat
-	./sim/obj_cov_i2c/sim_cov_i2c
+	verilator --cc --exe --build -Wall --coverage --top-module i2c_controller rtl/i2c_controller.sv tb/sim_i2c.cpp -o sim_cov_i2c
+	./obj_dir/sim_cov_i2c
 	mv sim/coverage.dat sim/cov/i2c.dat
-	./sim/obj_cov_config/sim_cov_config
+	verilator --cc --exe --build -Wall --coverage --top-module tb_adv7513_config tb/tb_adv7513_config.sv rtl/adv7513_config.sv rtl/i2c_controller.sv tb/sim_adv7513_config.cpp -o sim_cov_config
+	./obj_dir/sim_cov_config
 	mv sim/coverage.dat sim/cov/config.dat
-	./sim/obj_cov_cordic/sim_cov_cordic
+	verilator --cc --exe --build -Wall --coverage --top-module apu_cordic rtl/apu_cordic.sv tb/sim_cordic.cpp -o sim_cov_cordic
+	./obj_dir/sim_cov_cordic
 	mv sim/coverage.dat sim/cov/cordic.dat
 	verilator_coverage --write sim/cov/merged.dat sim/cov/apu.dat sim/cov/plasma.dat sim/cov/i2c.dat sim/cov/config.dat sim/cov/cordic.dat
 	verilator_coverage sim/cov/merged.dat | tee sim/cov/summary.txt
