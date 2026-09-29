@@ -63,6 +63,7 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency: fill 18 per sim_cordic's iteration convention = 19 system clocks (B18), 1/clk |
 | rv32asm + rv32enc (tools/) | RV32I_Zicsr encoding fidelity, CPU ladder step 2 | `python3 tools/tests/test_rv32asm.py`, `python3 tools/tests/test_rv32enc.py` | 101 + 246 checks, exit code = fail count; 46-row encode/decode round trip; spec-derived scramble anchors; la is pc-relative AUIPC+ADDI (B19); suites seen to fail under three mutations: SLTIU funct3, LA pc, one unpack_b bit |
 | rv32iss (tools/) | OP/OP-IMM and load/store semantics, private memory, CSV retirement/halt trace, schedule-invariant completion | `python3 tools/tests/test_rv32iss.py` (also `make tools-tests`) | 56 checks; rr + scripted + 8 seeded schedules reach ebreak with identical registers and private RAM |
+| make coverage, all five harnesses | merged line/toggle/branch/expr coverage with enforced floors | `make coverage`, also a CI step | 2026-09-29 baseline: line 88.7% (133/150), toggle 87.3% (2465/2824), branch 98.1% (102/104), expr 95.7% (154/161); floors line >= 85 and toggle >= 84, baseline minus margin per B10; per-harness dats merged with verilator_coverage |
 
 
 ## Method
@@ -171,7 +172,11 @@ reasoning behind each.
   alignment gap closed with D18 (19e6272); the enforcing check runs in
   make sim.
 - The Python tools suite runs in CI via `make tools-tests`.
-- No coverage metric beyond this inventory.
+- Coverage is merged line and toggle across the five harnesses with floors
+  (make coverage, CI step); branch and expr are reported but not floored.
+  The 17 uncovered line points at baseline are not itemized yet; itemize
+  them the first time a floor bites, not before, and never raise a floor
+  without a new measurement.
 - No formal methods. The I2C contract is enforced by simulation only.
 
 ## Conventions for new testbenches
