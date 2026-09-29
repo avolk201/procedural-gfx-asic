@@ -137,6 +137,13 @@ Hardware evidence:
 
 The D18 build ran on a Terasic DE10-Nano. The plasma output was observed on an OLED display on 2026-09-25. The flashed .sof carries checksum 0x00E4BE7C, as recorded in the README proof table.
 
+The 2026-09-29 compile (assertion blocks plus the specified reset
+synchronizer) was flashed the same day and observed on a TV: dashboard
+nominal (cfg_done near 340 ms, cfg_error off, pll_locked immediate, alive
+blink about 1 Hz) and full-width boiling plasma. Its .sof sha256 is
+184215f812b630427e8190fb90cfacdf8f2db570104bcaea90bb626f7c77c646. Display
+model unrecorded, as with every earlier session.
+
 ## What remains unmeasured
 
 The following items are not established by this build:
@@ -145,8 +152,6 @@ The following items are not established by this build:
 - No logic-analyzer capture of the physical I2C bus.
 - No ADV7513 register readback.
 - Endurance and hot-plug behaviour remain untested.
-- The 2026-09-29 compile is simulation- and STA-verified only; it has not
-  been flashed. Hardware evidence remains the D18 build.
 
 These absences are recorded deliberately. They define the next verification tasks.
 

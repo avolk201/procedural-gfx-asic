@@ -1,0 +1,7 @@
+compile: 2026-09-29 19:05:40 +1000, Bazzite box, box HEAD a5b8fde,
+working diff limited to the LAST_QUARTUS_VERSION qsf writeback
+flash: quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"
+sof sha256: 184215f812b630427e8190fb90cfacdf8f2db570104bcaea90bb626f7c77c646
+observed: TV, full-width boiling plasma, dashboard nominal
+(LED0 ~340 ms, LED1 off, LED2 immediate, LED3 ~1 Hz)
+display model: unrecorded

@@ -19,9 +19,11 @@ Project repository: [avolk201/procedural-gfx-fpga](https://github.com/avolk201/p
 ## Build artifacts
 
 Quartus reports from the 2026-09-29 compile on the Bazzite box (Quartus Prime
-Standard 25.1, part 5CSEBA6U23I7). Source state: working tree at 84bca86 plus
-the uncommitted concurrent-assertion blocks in rtl/apu_vga_timing.sv and
-rtl/i2c_controller.sv; recompile after that commit for a tag-pinned set.
+Standard 25.1, part 5CSEBA6U23I7). Source state: every file Quartus reads
+equals commit a5b8fde (rtl and constraints byte-identical by sha256
+box-vs-Mac; the qsf carried only the LAST_QUARTUS_VERSION writeback).
+Compiled 18:35 and 19:05 +1000 on 2026-09-29; the 19:05 build was flashed
+and observed on a TV that day.
 
 - [sta.rpt](artifacts/d18/sta.rpt): Slow 1100mV 100C, TNS 0.000; worst setup
   +13.868 ns on clk_50m and +24.117 ns on divclk; hold +0.232/+0.365;
