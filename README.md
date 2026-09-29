@@ -53,7 +53,7 @@ or the board.
 
 ## Architecture
 
-<img src="docs/block_diagram.png" alt="Block diagram: board oscillator into clock generation, then a timing and prefetch generator feeding a plasma scene built from three parallel CORDIC gratings, through an output mux and pads to the ADV7513 HDMI transmitter and monitor; a config walker drives an I2C master into the transmitter; a planned CPU path shows an RV32I Zicsr core with hart0 I/D RAM, scene registers, an SD loader and a host-side assembler" width="849">
+<img src="docs/block_diagram.png" alt="Block diagram: board oscillator at 50 MHz into a clock generator whose PLL emits a 25.175 MHz pixel clock, then a timing and prefetch generator feeding a plasma scene built from three parallel CORDIC gratings, through an output mux and pads to the ADV7513 HDMI transmitter and monitor; a config walker on the 50 MHz domain drives an I2C master into the transmitter; a planned 50 MHz CPU path shows an RV32I Zicsr core with hart0 I/D RAM, scene registers crossing by write-then-toggle, an SD loader and a host-side assembler" width="849">
 
 *Solid blue is implemented fabric, dashed is planned per
 [docs/cpu-contract.md](docs/cpu-contract.md), green is host tooling. The scene
@@ -64,6 +64,10 @@ exists: a pixel lives for one clock, and scene state is x, y and a frame
 counter. Budget: 307,200 active of 420,000 pixel clocks per frame at
 25.175 MHz, 18.432 Mpx/s, and the three parallel CORDICs retire one sample
 per clock.*
+
+Diagram source is [docs/block_diagram.tex](docs/block_diagram.tex), a
+standalone TikZ figure; render it with `tectonic docs/block_diagram.tex` then
+`pdftoppm -png -r 200 -singlefile docs/block_diagram.pdf docs/block_diagram`.
 
 ## How to read this repo
 
