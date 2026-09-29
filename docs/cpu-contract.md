@@ -226,9 +226,10 @@ it is defined.
   (per-instruction sections in ch. 2 plus the ch. 35 RV32I listing, pp. 609-611,
   and the Zicsr rows). Emits one image per hart from separate sources.
 3. Two-hart golden model (Python ISS): per-hart state, private memories,
-   mailbox model, tb-controllable interleaving of the two instruction
-   streams (the knob is smaller than SMP's, but protocol tests still need
-   deterministic replay).
+  mailbox model, and tb-controllable interleaving of the two instruction
+  streams by round-robin, scripted hart IDs, or `random.Random(seed)`.
+  Protocol tests need deterministic replay; the schedule-invariance test
+  runs both private-memory programs through ebreak under each schedule mode.
 4. Self-checking tbs: ISA sweep per hart; boot ordering (hart1 executes zero
    instructions before HART1_RELEASE); mailbox protocol suite including the
    set-while-full violation; mutation step per rule 4 (break the handshake
@@ -243,6 +244,25 @@ it is defined.
    registers when the raycaster lands.
 7. Phase 8 adds the loader master, the arbiter, and its starvation-bound
    test to this ladder.
+
+### Cosimulation trace format (frozen)
+
+The ISS trace sink contains CSV data rows, without a header. The fixed column
+order is `hart,pc,inst_word,rd,rd_value,mem_op,addr,size,value`. `hart` and
+`rd` are decimal; `pc`, `inst_word`, `rd_value`, `addr`, and `value` are
+zero-padded, lowercase, eight-digit hexadecimal values without a `0x`
+prefix; `size` is a decimal byte count. `rd` is the architectural register
+index, including `0`; `rd_value` is the visible post-instruction value, so
+an instruction targeting x0 records `0,00000000` in those columns.
+
+For non-memory retirement rows, `mem_op`, `addr`, `size`, and `value` are
+empty. Memory rows use the mnemonic in `mem_op`, the byte address in `addr`,
+the access width in bytes in `size`, and the transferred value in `value`;
+unused register-write fields are empty. Halt rows use `halt:<reason>` in
+`mem_op`, with `rd`, `rd_value`, `addr`, `size`, and `value` empty. `pc` is
+the faulting/current PC and `inst_word` is the fetched word when one was
+available; both are empty when unavailable. Halt rows are emitted for
+`ebreak`, `ecall`, `illegal`, `budget`, and `bus`.
 
 ## 10. OPEN (owner)
 
