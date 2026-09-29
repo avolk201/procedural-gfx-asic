@@ -155,6 +155,8 @@ Spec references: [docs/references.md](docs/references.md).
 Verification methodology and harness inventory: [docs/verification.md](docs/verification.md).
 CORDIC math core: [docs/cordic.md](docs/cordic.md).
 Board bring-up and flashing: [docs/deploy.md](docs/deploy.md).
+Rendered engineering notes and sha256-pinned build artifacts (GitHub Pages):
+[avolk201.github.io/procedural-gfx-fpga](https://avolk201.github.io/procedural-gfx-fpga/).
 
 ## License
 
