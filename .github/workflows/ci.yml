@@ -40,5 +40,5 @@ jobs:
       - name: Run plasma scene look check
         run: make sim_plasma
 
-      - name: Run RV32 assembler and encoding golden suites
+      - name: Run RV32 assembler, encoder, and ISS suites
         run: make tools-tests

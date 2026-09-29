@@ -1,0 +1,222 @@
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from tools.rv32enc import ENC, pack_i, pack_r, pack_shift_i
+from tools.rv32iss import (
+    DEVICE_BASE, HALT_REASONS, RAM_BYTES, Hart, Machine, decode_instruction,
+)
+
+
+CHECKS = 0
+FAILS = 0
+
+
+def check(name, passed):
+    global CHECKS, FAILS
+    CHECKS += 1
+    FAILS += not passed
+    print(('PASS: ' if passed else 'FAIL: ') + name)
+
+
+OP_EXPECTED = {
+    'add': 0xFFFFFFFF,
+    'sub': 0xFFFFFFFD,
+    'sll': 0xFFFFFFFC,
+    'slt': 1,
+    'sltu': 0,
+    'xor': 0xFFFFFFFF,
+    'srl': 0x7FFFFFFF,
+    'sra': 0xFFFFFFFF,
+    'or': 0xFFFFFFFF,
+    'and': 0,
+}
+
+OPIMM_EXPECTED = {
+    'addi': 0xFFFFFFFF,
+    'slli': 0xFFFFFFFC,
+    'slti': 1,
+    'sltiu': 0,
+    'xori': 0xFFFFFFFF,
+    'srli': 0x7FFFFFFF,
+    'srai': 0xFFFFFFFF,
+    'ori': 0xFFFFFFFF,
+    'andi': 0,
+}
+
+
+def encode(mnemonic):
+    fmt, opcode, funct3, funct7 = ENC[mnemonic]
+    if fmt == 'R':
+        return pack_r(3, 1, 2, funct3, funct7, opcode)
+    if funct7 is not None:
+        return pack_shift_i(3, 1, 1, funct3, funct7, opcode)
+    return pack_i(3, 1, funct3, 1, opcode)
+
+
+def run_instruction(mnemonic):
+    machine = Machine()
+    hart = machine.harts[0]
+    hart.reg_write(1, 0xFFFFFFFE)
+    hart.reg_write(2, 1)
+    word = encode(mnemonic)
+    hart.mem[0:4] = word.to_bytes(4, 'little')
+    retired = machine.step(0)
+    return machine, hart, word, retired
+
+
+def run_word(word, initial):
+    machine = Machine(hart_count=1)
+    hart = machine.harts[0]
+    for register, value in initial.items():
+        hart.reg_write(register, value)
+    hart.mem[:4] = word.to_bytes(4, 'little')
+    return machine, hart, machine.step(0)
+
+
+def scheduled_machine(schedule, seed=None):
+    instructions_per_hart = 5
+    total_instructions = 2 * instructions_per_hart
+    machine = Machine(max_steps=4 * total_instructions + 64)
+    for hart_id, hart in enumerate(machine.harts):
+        words = (
+            pack_i(1, 0, 0, hart_id + 3),
+            pack_i(2, 1, 0, -1),
+            pack_i(3, 2, 0b100, 0x55),
+            pack_i(4, 3, 0b001, 3),
+            0x00100073,
+        )
+        hart.mem[:4 * len(words)] = b''.join(
+            word.to_bytes(4, 'little') for word in words
+        )
+        hart.mem[0x6000:0x6004] = (0xA0 + hart_id).to_bytes(4, 'little')
+    machine.run(schedule, seed=seed)
+    state = tuple((tuple(hart.x), bytes(hart.mem), hart.halted)
+                  for hart in machine.harts)
+    return machine, state
+
+
+def selftest():
+    check('memory size is 32 KiB', RAM_BYTES == 0x8000)
+    check('two harts have private RAM', Hart(0).mem is not Hart(1).mem)
+    check('halt vocabulary is defined', HALT_REASONS ==
+          (None, 'ebreak', 'ecall', 'illegal', 'budget', 'bus'))
+
+    for mnemonic, expected in {**OP_EXPECTED, **OPIMM_EXPECTED}.items():
+        machine, hart, word, retired = run_instruction(mnemonic)
+        check(f'{mnemonic} result and retirement', retired and
+              hart.reg_read(3) == expected and hart.pc == 4 and
+              machine.trace == [f'0,00000000,{word:08x},3,{expected:08x},,,,'])
+
+    machine, hart, retired = run_word(0xFFF0F193, {1: 0xFFFFFFFE})
+    check('andi sign-extends negative immediate', retired and
+          hart.reg_read(3) == 0xFFFFFFFE and machine.trace ==
+          ['0,00000000,fff0f193,3,fffffffe,,,,'])
+
+    machine, hart, retired = run_word(0xFFF0B193, {1: 0xFFFFFFFE})
+    check('sltiu compares against sign-extended immediate as unsigned', retired and
+          hart.reg_read(3) == 1 and machine.trace ==
+          ['0,00000000,fff0b193,3,00000001,,,,'])
+
+    machine, hart, retired = run_word(0x004091B3, {1: 1, 4: 33})
+    check('register shift masks high shift-amount bits', retired and
+          hart.reg_read(3) == 2 and machine.trace ==
+          ['0,00000000,004091b3,3,00000002,,,,'])
+
+    check('SLLI with nonzero imm[11:5] is illegal',
+          decode_instruction(0x02109193) is None)
+    machine, hart, retired = run_word(0x02109193, {})
+    check('illegal SLLI records halt row', not retired and
+          hart.halted == 'illegal' and machine.trace ==
+          ['0,00000000,02109193,,,halt:illegal,,,'])
+
+    machine, hart, retired = run_word(0x00700013, {})
+    check('rd=x0 write is ignored and traced as zero', retired and
+            hart.reg_read(0) == 0 and hart.x[0] == 0 and machine.trace ==
+          ['0,00000000,00700013,0,00000000,,,,'])
+
+    machine, hart, retired = run_word(0x002081B3, {1: 0xFFFFFFFF, 2: 1})
+    check('ADD wraps to exactly zero', retired and hart.reg_read(3) == 0 and
+          machine.trace == ['0,00000000,002081b3,3,00000000,,,,'])
+
+    machine = Machine(max_steps=4)
+    for hart_id, hart in enumerate(machine.harts):
+        word = pack_i(1, 0, 0, hart_id + 1)
+        hart.mem[:8] = word.to_bytes(4, 'little') * 2
+    machine.run([1, 0, 1, 0])
+    check('scripted schedule controls retirement trace order',
+            [line.split(',')[0] for line in machine.trace[:4]] ==
+            ['1', '0', '1', '0'])
+    check('global step budget halts all active harts',
+          machine.steps == 4 and all(h.halted == 'budget' for h in machine.harts) and
+          machine.trace[4:] == [
+              '0,00000008,,,,halt:budget,,,',
+              '1,00000008,,,,halt:budget,,,',
+          ])
+
+    machine = Machine(max_steps=2)
+    for hart in machine.harts:
+        hart.mem[:4] = pack_i(1, 0, 0, 1).to_bytes(4, 'little')
+    machine.run()
+    check('round-robin run interleaves harts',
+            [line.split(',')[0] for line in machine.trace[:2]] == ['0', '1'])
+
+    invariant_runs = [scheduled_machine('rr')]
+    invariant_runs.extend(scheduled_machine('random', seed=seed)
+                          for seed in range(8))
+    scripted_schedule = [0] * 10 + [1] * 10
+    invariant_runs.append(scheduled_machine(scripted_schedule))
+    invariant_state = invariant_runs[0][1]
+    check('final registers and private memories ignore schedule',
+          all(state == invariant_state for _, state in invariant_runs) and
+          all(halted == 'ebreak' for _, _, halted in invariant_state) and
+          all(machine.steps == 8 for machine, _ in invariant_runs))
+    repeated_random_run = scheduled_machine('random', seed=37)[0]
+    check('same random seed reproduces trace order',
+          repeated_random_run.trace == scheduled_machine('random', seed=37)[0].trace)
+
+    for word, reason in ((0x00000073, 'ecall'), (0x00100073, 'ebreak'),
+                         (0, 'illegal')):
+        machine = Machine()
+        machine.harts[0].mem[:4] = word.to_bytes(4, 'little')
+        check(f'{reason} halt reason', not machine.step(0) and
+              machine.harts[0].halted == reason and machine.trace == [
+                f'0,00000000,{word:08x},,,halt:{reason},,,'])
+
+    machine = Machine()
+    machine.harts[0].pc = 2
+    check('misaligned fetch halts illegal', not machine.step(0) and
+            machine.harts[0].halted == 'illegal' and machine.trace ==
+            ['0,00000002,,,,halt:illegal,,,'])
+    machine = Machine()
+    machine.harts[0].pc = RAM_BYTES
+    check('out-of-range fetch halts bus', not machine.step(0) and
+            machine.harts[0].halted == 'bus' and machine.trace ==
+            ['0,00008000,,,,halt:bus,,,'])
+
+    device_calls = []
+
+    def device_dispatch(hart_id, address, is_write, value):
+        device_calls.append((hart_id, address, is_write, value))
+        return True if is_write else 0x12345678
+
+    machine = Machine(device_dispatch=device_dispatch)
+    read_value = machine.dispatch_device(1, DEVICE_BASE, value=0)
+    write_result = machine.dispatch_device(0, DEVICE_BASE + 4, True, -1)
+    check('device dispatch forwards and masks access values',
+            read_value == 0x12345678 and write_result is True and
+          device_calls == [(1, DEVICE_BASE, False, 0),
+                           (0, DEVICE_BASE + 4, True, 0xFFFFFFFF)])
+    machine = Machine()
+    check('unmapped device access halts bus',
+          machine.dispatch_device(0, DEVICE_BASE) is None and
+            machine.harts[0].halted == 'bus' and machine.trace ==
+            ['0,00000000,,,,halt:bus,,,'])
+
+    print(f'\nSummary: {FAILS} failed out of {CHECKS} checks')
+    return FAILS
+
+
+if __name__ == '__main__':
+    sys.exit(selftest())

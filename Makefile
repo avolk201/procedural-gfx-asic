@@ -70,6 +70,7 @@ golden:
 tools-tests:
 	python3 tools/tests/test_rv32asm.py
 	python3 tools/tests/test_rv32enc.py
+	python3 tools/tests/test_rv32iss.py
 
 # Serial on purpose: every Verilator target builds into obj_dir, and
 # $(MAKE) -j1 defeats an inherited -j from `make -j8 regress`.
