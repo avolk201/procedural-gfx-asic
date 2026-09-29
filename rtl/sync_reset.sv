@@ -8,6 +8,11 @@ module sync_reset (
     output logic rst_sync_n_o
 );
 
+// The waiver below is scoped to this module and is load-bearing: without it
+// lint_top fails with two SYNCASYNCNET warnings on the d flop (measured
+// 2026-09-29). Async assertion with synchronous deassertion is the pattern;
+// MTBF is closed by the SYNCHRONIZER_IDENTIFICATION assignments in
+// de10nano_top.qsf, measured the same day, not by anything in this file.
 /* verilator lint_off SYNCASYNCNET */
 logic [1:0] d;
 

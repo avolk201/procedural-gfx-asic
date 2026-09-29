@@ -115,6 +115,12 @@ module apu_vga_timing #(
 	endproperty
 	assert property (p_de_not_in_hsync) else $error("DE during HSync violation");
 
+	property p_de_not_in_vsync;
+		@(posedge clk_pix_i)
+		!(de_o && !vsync_o);
+	endproperty
+	assert property (p_de_not_in_vsync) else $error("DE during VSync violation");
+
 	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
 		if (!rst_n_i) begin
 			h_cnt <= '0;
