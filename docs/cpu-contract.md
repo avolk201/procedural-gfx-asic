@@ -134,6 +134,14 @@ it is defined.
   program order; FENCE may be implemented as a NOP at this integration
   level. FENCE.I is Zifencei, outside the ISA string; the assembler does
   not emit it, since there is no I-cache.
+- ISS retirement traces use nine CSV fields. Loads record
+  `hart,pc,word,rd,rd_value,mnemonic,addr,size,raw`, where `raw` is the
+  right-justified transferred value before sign or zero extension. Stores
+  record `hart,pc,word,,,mnemonic,addr,size,lanes`, where `lanes` is the low
+  `size` bytes of `rs2` shifted into the byte lanes selected by `addr[1:0]`.
+  Addresses and data are eight-digit hexadecimal; sizes are decimal. A
+  device callback receives the right-justified store value and owns device
+  lane placement.
 - Boot images: inferred RAM with initial $readmemh, one mechanism for
   Verilator and Quartus, fed directly by the assembler (decided). Two
   images, firmware0.hex and firmware1.hex, each linked at 0x0000_0000 in its
