@@ -7,10 +7,11 @@ Device addresses begin at 0x40000000 and are delegated to the machine's
 device callback. Retirement records are appended by ``step`` in execution
 order, so interleaved harts share one deterministic trace stream.
 
-This increment executes the RV32I OP and OP-IMM instruction families.
-Other legal instruction families raise NotImplementedError until added. When a
-family is implemented, its reserved encodings must decode to an ``illegal``
 halt record rather than escape from a cosimulation run.
+This increment executes the RV32I OP, OP-IMM, load, and store instruction
+families. Other legal instruction families raise NotImplementedError until
+added. When a family is implemented, its reserved encodings must decode to an
+``illegal`` halt record rather than escape from a cosimulation run.
 """
 
 import random
@@ -26,6 +27,8 @@ RAM_BYTES = 0x8000
 DEVICE_BASE = 0x40000000
 MASK32 = 0xFFFFFFFF
 HALT_REASONS = (None, 'ebreak', 'ecall', 'illegal', 'budget', 'bus')
+LOADS = {'lb': 1, 'lbu': 1, 'lh': 2, 'lhu': 2, 'lw': 4}
+STORES = {'sb': 1, 'sh': 2, 'sw': 4}
 
 
 def w32(value):
@@ -64,9 +67,11 @@ class Hart:
 class Machine:
     """Two-hart ISS with private RAM and a global retired-instruction budget.
 
-    ``device_dispatch(hart_id, address, is_write, value)`` handles addresses
-    at or above DEVICE_BASE. Return ``None`` for an unmapped access; mapped
-    reads return an integer and mapped writes return any non-None value.
+    ``device_dispatch(hart_id, address, is_write, value, size)`` handles
+    addresses at or above DEVICE_BASE. Values are right-justified; the device
+    callback owns byte-lane placement for writes. Return ``None`` for an
+    unmapped access; mapped reads return a 32-bit word and mapped writes
+    return any non-None value.
     """
 
     def __init__(self, max_steps=100000, device_dispatch=None, hart_count=2):
@@ -101,14 +106,20 @@ class Machine:
             f'{value:08x}', '', '', '', '',
         )))
 
-    def dispatch_device(self, hart_id, address, is_write=False, value=0):
+    def dispatch_device(self, hart_id, address, is_write=False, value=0,
+                        size=4):
         if address < DEVICE_BASE:
             raise ValueError(f'not a device address: {address:#x}')
         hart = self.harts[hart_id]
         if self.device_dispatch is None:
             self._record_halt(hart_id, 'bus', hart.pc)
             return None
-        result = self.device_dispatch(hart_id, address, is_write, w32(value))
+        access_value = w32(value)
+        if is_write:
+            access_value &= (1 << (size * 8)) - 1
+        result = self.device_dispatch(
+            hart_id, address, is_write, access_value, size
+        )
         if result is None:
             self._record_halt(hart_id, 'bus', hart.pc)
             return None
@@ -176,6 +187,46 @@ class Machine:
                 'ori': lambda: rs1 | w32(immediate),
                 'andi': lambda: rs1 & w32(immediate),
             }[mnemonic]()
+        elif mnemonic in LOADS or mnemonic in STORES:
+            if mnemonic in LOADS:
+                immediate = sign_extend(instruction_fields['imm12'], 12)
+            else:
+                immediate = sign_extend(
+                    (instruction_fields['s_imm11_5'] << 5) |
+                    instruction_fields['s_imm4_0'], 12
+                )
+            addr = w32(rs1 + immediate)
+            if mnemonic in LOADS:
+                size = LOADS[mnemonic]
+                raw = self.mem_read(hart_id, addr, size, word)
+                if raw is None:
+                    return False
+                result = (sign_extend(raw, size * 8)
+                          if mnemonic in ('lb', 'lh') else raw)
+                hart.reg_write(rd, result)
+                value = hart.reg_read(rd)
+                hart.pc = w32(pc + 4)
+                self.steps += 1
+                self.trace.append(','.join((
+                    str(hart_id), f'{pc:08x}', f'{word:08x}', str(rd),
+                    f'{value:08x}', mnemonic, f'{addr:08x}', str(size),
+                    f'{raw:08x}',
+                )))
+            else:
+                size = STORES[mnemonic]
+                if not self.mem_write(hart_id, addr, size, rs2, word):
+                    return False
+                shift = (addr & 0x3) * 8
+                lanes = ((rs2 & ((1 << (size * 8)) - 1)) << shift) & MASK32
+                hart.pc = w32(pc + 4)
+                self.steps += 1
+                self.trace.append(','.join((
+                    str(hart_id), f'{pc:08x}', f'{word:08x}', '', '',
+                    mnemonic, f'{addr:08x}', str(size), f'{lanes:08x}',
+                )))
+            if self.steps >= self.max_steps:
+                self._halt_at_budget()
+            return True
         else:
             raise NotImplementedError(f'{mnemonic} is not implemented')
 
@@ -219,6 +270,49 @@ class Machine:
                     break
                 self.step(hart_id)
         return self.steps
+
+    def mem_read(self, hart_id, addr, size, word):
+        """Raw transferred bytes right-justified, or None after a halt.
+
+        Check order is load-bearing: alignment before region. M4 and M6
+        exist to prove this order stays.
+        """
+        hart = self.harts[hart_id]
+        if addr & (size - 1):
+            self._record_halt(hart_id, 'illegal', hart.pc, word)
+            return None
+        if addr + size <= RAM_BYTES:
+            return int.from_bytes(hart.mem[addr:addr + size], 'little')
+        if addr >= DEVICE_BASE:
+            device_word = self.dispatch_device(hart_id, addr, False, 0, size)
+            if device_word is None:
+                return None
+
+            shift = (addr & 0x3) * 8
+            mask = (1 << (size * 8)) - 1
+            return (device_word >> shift) & mask
+        self._record_halt(hart_id, 'bus', hart.pc, word)
+        return None
+
+    def mem_write(self, hart_id, addr, size, value, word):
+        hart = self.harts[hart_id]
+        if addr & (size - 1):
+            self._record_halt(hart_id, 'illegal', hart.pc, word)
+            return False
+        if addr + size <= RAM_BYTES:
+            shift = (addr & 3) * 8
+            lane = ((1 << (size * 8)) - 1) << shift
+            base = addr & ~3
+            old = int.from_bytes(hart.mem[base:base + 4], 'little')
+            merged = (old & ~lane) | ((value << shift) & lane)
+            hart.mem[base:base + 4] = merged.to_bytes(4, 'little')
+            return True
+        if addr >= DEVICE_BASE:
+            # Device models own byte-lane placement for writes.
+            result = self.dispatch_device(hart_id, addr, True, value, size)
+            return result is not None
+        self._record_halt(hart_id, 'bus', hart.pc, word)
+        return False
 
 
 def decode_instruction(word):

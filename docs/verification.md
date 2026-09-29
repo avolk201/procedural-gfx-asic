@@ -62,7 +62,7 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | de10nano_top on DE10-Nano | hardware bring-up: colorbars 2026-09-23, plasma 2026-09-25 | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16). Plasma build 2026-09-25 (.sof 0x00E40517): worst slack +14.032/+0.271/+16.882/+0.943/+1.241, TNS 0.000, divclk Fmax 72.14 MHz, 2058 ALMs / 3 DSP / 0 M10K bits, boiling plasma full-width on one OLED (B17). D18 build 2026-09-25 (.sof 0x00E4BE7C): worst slack +14.012/+0.168/+16.599/+0.698/+1.241, TNS 0.000, divclk Fmax 72.79 MHz, 2067 ALMs / 3 DSP / 0 M10K bits, DE aligned to the active window, image unchanged on the same OLED (B18). 2026-09-29 flash of the assertion build at a5b8fde: .sof sha256 184215f8..., plasma full-width on a TV, dashboard nominal, same-day observation |
 | apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency: fill 18 per sim_cordic's iteration convention = 19 system clocks (B18), 1/clk |
 | rv32asm + rv32enc (tools/) | RV32I_Zicsr encoding fidelity, CPU ladder step 2 | `python3 tools/tests/test_rv32asm.py`, `python3 tools/tests/test_rv32enc.py` | 101 + 246 checks, exit code = fail count; 46-row encode/decode round trip; spec-derived scramble anchors; la is pc-relative AUIPC+ADDI (B19); suites seen to fail under three mutations: SLTIU funct3, LA pc, one unpack_b bit |
-| rv32iss (tools/) | OP/OP-IMM semantics, private memory, CSV retirement/halt trace, schedule-invariant completion | `python3 tools/tests/test_rv32iss.py` (also `make tools-tests`) | 41 checks; rr + scripted + 8 seeded schedules reach ebreak with identical registers and private RAM |
+| rv32iss (tools/) | OP/OP-IMM and load/store semantics, private memory, CSV retirement/halt trace, schedule-invariant completion | `python3 tools/tests/test_rv32iss.py` (also `make tools-tests`) | 56 checks; rr + scripted + 8 seeded schedules reach ebreak with identical registers and private RAM |
 
 
 ## Method
@@ -86,6 +86,32 @@ and the I2C timing come straight out of those documents, not out of thin air.
   reason`, and `illegal halt reason` must fail on their exact CSV rows.
   Observed: 7 red checks, including illegal-SLLI, misaligned-fetch, and bus
   halt rows. Each mutation was restored before the next was applied.
+
+### ISS memory mutations (isolated `/tmp` copies)
+
+Each mutation below was applied alone to a fresh copy of `tools/` and run
+against the 56-check ISS suite. All returned nonzero and were restored by
+discarding the temporary copy.
+
+1. M1, return raw data instead of sign-extending signed loads: 2 red checks
+  (`lb sign extension and memory trace`, `lh sign extension and memory
+  trace`).
+2. M2, sign-extend every load, including unsigned loads: 3 red checks
+  (`lbu sign extension and memory trace`, `lhu sign extension and memory
+  trace`, `RAM byte load selects addressed lane`).
+3. M3, decode store offsets from the I-type immediate instead of the split
+  S-type fields: 2 red checks (`sb writes data lanes and memory trace`,
+  `sw writes data lanes and memory trace`).
+4. M4, align RAM load addresses down to a word boundary: 1 red check
+  (`RAM byte load selects addressed lane`).
+5. M5, omit the address-derived lane shift for RAM stores: 2 red checks
+  (`sb writes data lanes and memory trace`, `sh writes data lanes and memory
+  trace`).
+6. M6, skip load alignment validation: 1 red check (`misaligned lh to x0
+  traps before device access`).
+7. M7, ignore the byte offset when extracting device-read lanes: 2 red checks
+  (`lb to x0 still performs device read side effect`, `device byte load
+  extracts addressed lane`).
 
 Three ideas the testbenches are built on. docs/decisions.md carries the full
 reasoning behind each.

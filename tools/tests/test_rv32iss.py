@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from tools.rv32enc import ENC, pack_i, pack_r, pack_shift_i
+from tools.rv32enc import ENC, pack_i, pack_r, pack_s, pack_shift_i
 from tools.rv32iss import (
     DEVICE_BASE, HALT_REASONS, RAM_BYTES, Hart, Machine, decode_instruction,
 )
@@ -140,6 +140,101 @@ def selftest():
     check('ADD wraps to exactly zero', retired and hart.reg_read(3) == 0 and
           machine.trace == ['0,00000000,002081b3,3,00000000,,,,'])
 
+    load_cases = (
+        ('lb', 0, 1, 0xFFFFFF80, 0x00000080),
+        ('lbu', 4, 1, 0x00000080, 0x00000080),
+        ('lh', 1, 2, 0xFFFFFF80, 0x0000FF80),
+        ('lhu', 5, 2, 0x0000FF80, 0x0000FF80),
+        ('lw', 2, 4, 0x1234FF80, 0x1234FF80),
+    )
+    machine = Machine(hart_count=1)
+    hart = machine.harts[0]
+    hart.reg_write(1, 0x6000)
+    hart.mem[0x6000:0x6004] = bytes.fromhex('80ff3412')
+    load_words = [
+        pack_i(3, 1, funct3, 0, 0x03)
+        for _, funct3, _, _, _ in load_cases
+    ]
+    hart.mem[:4 * len(load_words)] = b''.join(
+        word.to_bytes(4, 'little') for word in load_words
+    )
+    for index, (mnemonic, _, size, expected, raw) in enumerate(load_cases):
+        word = load_words[index]
+        retired = machine.step(0)
+        expected_row = (
+            f'0,{4 * index:08x},{word:08x},3,{expected:08x},'
+            f'{mnemonic},00006000,{size},{raw:08x}'
+        )
+        check(f'{mnemonic} sign extension and memory trace',
+              retired and hart.reg_read(3) == expected and
+              machine.trace[-1] == expected_row)
+
+    machine = Machine(hart_count=1)
+    hart = machine.harts[0]
+    hart.reg_write(1, 0x6000)
+    hart.mem[0x6000:0x6004] = bytes.fromhex('80ff3412')
+    word = pack_i(3, 1, 4, 1, 0x03)
+    hart.mem[:4] = word.to_bytes(4, 'little')
+    retired = machine.step(0)
+    check('RAM byte load selects addressed lane',
+          retired and hart.reg_read(3) == 0xFF and machine.trace == [
+              f'0,00000000,{word:08x},3,000000ff,lbu,00006001,1,000000ff'
+          ])
+
+    device_reads = []
+
+    def read_device(hart_id, address, is_write, value, size):
+        device_reads.append((hart_id, address, is_write, value, size))
+        return 0x12345678
+
+    machine = Machine(hart_count=1, device_dispatch=read_device)
+    hart = machine.harts[0]
+    hart.reg_write(1, DEVICE_BASE + 1)
+    word = pack_i(0, 1, 0, 0, 0x03)
+    hart.mem[:4] = word.to_bytes(4, 'little')
+    retired = machine.step(0)
+    check('lb to x0 still performs device read side effect',
+          retired and hart.reg_read(0) == 0 and
+          device_reads == [(0, DEVICE_BASE + 1, False, 0, 1)] and
+          machine.trace == [
+              f'0,00000000,{word:08x},0,00000000,lb,40000001,1,00000056'
+          ])
+
+    machine = Machine(hart_count=1, device_dispatch=read_device)
+    hart = machine.harts[0]
+    hart.reg_write(1, DEVICE_BASE)
+    word = pack_i(0, 1, 1, 1, 0x03)
+    hart.mem[:4] = word.to_bytes(4, 'little')
+    reads_before = len(device_reads)
+    retired = machine.step(0)
+    check('misaligned lh to x0 traps before device access',
+          not retired and hart.halted == 'illegal' and
+          len(device_reads) == reads_before and machine.trace == [
+              f'0,00000000,{word:08x},,,halt:illegal,,,'
+          ])
+
+    store_cases = (
+        ('sb', 0, 1, 1, 0x0000DD00, b'\xdd'),
+        ('sh', 1, 2, 2, 0xCCDD0000, b'\xdd\xcc'),
+        ('sw', 2, 4, 0, 0xAABBCCDD, b'\xdd\xcc\xbb\xaa'),
+    )
+    for mnemonic, funct3, size, offset, lanes, stored_bytes in store_cases:
+        machine = Machine(hart_count=1)
+        hart = machine.harts[0]
+        hart.reg_write(1, 0x6000)
+        hart.reg_write(2, 0xAABBCCDD)
+        word = pack_s(1, 2, funct3, offset, 0x23)
+        hart.mem[:4] = word.to_bytes(4, 'little')
+        retired = machine.step(0)
+        address = 0x6000 + offset
+        expected_row = (
+            f'0,00000000,{word:08x},,,{mnemonic},{address:08x},'
+            f'{size},{lanes:08x}'
+        )
+        check(f'{mnemonic} writes data lanes and memory trace',
+              retired and hart.mem[address:address + size] == stored_bytes and
+              machine.trace == [expected_row])
+
     machine = Machine(max_steps=4)
     for hart_id, hart in enumerate(machine.harts):
         word = pack_i(1, 0, 0, hart_id + 1)
@@ -197,21 +292,45 @@ def selftest():
 
     device_calls = []
 
-    def device_dispatch(hart_id, address, is_write, value):
-        device_calls.append((hart_id, address, is_write, value))
+    def device_dispatch(hart_id, address, is_write, value, size):
+        device_calls.append((hart_id, address, is_write, value, size))
         return True if is_write else 0x12345678
 
     machine = Machine(device_dispatch=device_dispatch)
     read_value = machine.dispatch_device(1, DEVICE_BASE, value=0)
     write_result = machine.dispatch_device(0, DEVICE_BASE + 4, True, -1)
     check('device dispatch forwards and masks access values',
-            read_value == 0x12345678 and write_result is True and
-          device_calls == [(1, DEVICE_BASE, False, 0),
-                           (0, DEVICE_BASE + 4, True, 0xFFFFFFFF)])
+          read_value == 0x12345678 and write_result is True and
+          device_calls == [(1, DEVICE_BASE, False, 0, 4),
+                           (0, DEVICE_BASE + 4, True, 0xFFFFFFFF, 4)])
+    device_calls.clear()
+    read_value = machine.mem_read(0, DEVICE_BASE + 1, 1, 0x00000003)
+    check('device byte load extracts addressed lane',
+          read_value == 0x56 and
+          device_calls == [(0, DEVICE_BASE + 1, False, 0, 1)])
+    device_calls.clear()
+    write_result = machine.mem_write(
+        0, DEVICE_BASE + 2, 2, 0xBEEF, 0x12345678
+    )
+    check('device halfword store forwards raw value and access size',
+          write_result and machine.harts[0].halted is None and
+          device_calls == [(0, DEVICE_BASE + 2, True, 0xBEEF, 2)])
+    device_calls.clear()
+    write_result = machine.mem_write(
+        0, DEVICE_BASE + 1, 1, 0xAABBCCDD, 0x12345678
+    )
+    check('device byte store right-justifies dirty rs2',
+          write_result and machine.harts[0].halted is None and
+          device_calls == [(0, DEVICE_BASE + 1, True, 0xDD, 1)])
     machine = Machine()
     check('unmapped device access halts bus',
           machine.dispatch_device(0, DEVICE_BASE) is None and
-            machine.harts[0].halted == 'bus' and machine.trace ==
+          machine.harts[0].halted == 'bus' and machine.trace ==
+          ['0,00000000,,,,halt:bus,,,'])
+    machine = Machine()
+    check('unmapped device store halts bus once',
+          not machine.mem_write(0, DEVICE_BASE, 4, 0x12345678, 0x00000023) and
+          machine.harts[0].halted == 'bus' and machine.trace ==
             ['0,00000000,,,,halt:bus,,,'])
 
     print(f'\nSummary: {FAILS} failed out of {CHECKS} checks')
