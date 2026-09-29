@@ -41,9 +41,12 @@ xprop: $(RTL) tb/sim_main.cpp
 
 # sim/cordic_golden.hex is generated from the model, so a stale file can never
 # cross-check the RTL: make rebuilds it whenever cordic_golden.py changes.
-sim/cordic_golden.hex: tb/cordic_golden.py
+# The pinned sha256 catches environment drift: a python or libm that would
+# emit a different table fails here instead of silently re-baselining.
+sim/cordic_golden.hex: tb/cordic_golden.py tb/cordic_golden.sha256
 	@mkdir -p sim
 	python3 tb/cordic_golden.py emit sim/cordic_golden.hex
+	shasum -a 256 -c tb/cordic_golden.sha256
 
 sim_cordic: rtl/apu_cordic.sv tb/sim_cordic.cpp sim/cordic_golden.hex
 	verilator --cc --exe --build -Wall --top-module apu_cordic rtl/apu_cordic.sv tb/sim_cordic.cpp -o sim_cordic
