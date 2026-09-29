@@ -24,6 +24,7 @@ module i2c_controller #(
 
     logic tick;
     int unsigned count;
+    /* verilator lint_off SYNCASYNCNET */
     always_ff @(posedge clk_i or negedge rst_n_i) begin
         if (!rst_n_i)
             count <= '0;
@@ -45,10 +46,16 @@ module i2c_controller #(
     logic [7:0] tx_byte;
     logic scl_oe_d, sda_oe_d;
     state_t state_d;
-    always_ff @(posedge clk_i) begin
-        scl_oe_d <= scl_oe;
-        sda_oe_d <= sda_oe;
-        state_d  <= state;
+    always_ff @(posedge clk_i or negedge rst_n_i) begin
+        if (!rst_n_i) begin
+            scl_oe_d <= 1'b0;
+            sda_oe_d <= 1'b0;
+            state_d  <= IDLE;
+        end else begin
+            scl_oe_d <= scl_oe;
+            sda_oe_d <= sda_oe;
+            state_d  <= state;
+        end
     end
 
     localparam logic [15:0] SCL_LOW_EXPECT = CLK_DIV[15:0];
@@ -61,19 +68,20 @@ module i2c_controller #(
     end
 
     property p_scl_low_width;
-        @(posedge clk_i)
+        @(posedge clk_i) disable iff (!rst_n_i)
         (scl_oe_d && !scl_oe) |-> scl_low_cnt == SCL_LOW_EXPECT;
     endproperty
     assert property (p_scl_low_width) else $error("SCL low width violation");
 
     property p_sda_stable_while_scl_high;
-        @(posedge clk_i)
+        @(posedge clk_i) disable iff (!rst_n_i)
         (sda_oe != sda_oe_d) |->
             (scl_oe && !scl_oe_d) || state_d == START ||
             state_d == STOP;
     endproperty
     assert property (p_sda_stable_while_scl_high)
         else $error("SDA changed while SCL high");
+    /* verilator lint_on SYNCASYNCNET */
 
 
 

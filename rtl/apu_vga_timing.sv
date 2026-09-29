@@ -78,6 +78,7 @@ module apu_vga_timing #(
 
 	logic [7:0]  hsync_low_cnt;
 	logic [11:0] vsync_low_cnt;
+	/* verilator lint_off SYNCASYNCNET */
 	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
 		if (!rst_n_i) begin
 			hsync_low_cnt <= '0;
@@ -90,36 +91,44 @@ module apu_vga_timing #(
 
 	logic hsync_o_d, vsync_o_d;
 	logic hsync_seen_fall, vsync_seen_fall;
-	always_ff @(posedge clk_pix_i) begin
-		hsync_o_d <= hsync_o;
-		vsync_o_d <= vsync_o;
-		hsync_seen_fall <= hsync_seen_fall || (hsync_o_d && !hsync_o);
-		vsync_seen_fall <= vsync_seen_fall || (vsync_o_d && !vsync_o);
+	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
+		if (!rst_n_i) begin
+			hsync_o_d       <= 1'b1;
+			vsync_o_d       <= 1'b1;
+			hsync_seen_fall <= 1'b0;
+			vsync_seen_fall <= 1'b0;
+		end else begin
+			hsync_o_d <= hsync_o;
+			vsync_o_d <= vsync_o;
+			hsync_seen_fall <= hsync_seen_fall || (hsync_o_d && !hsync_o);
+			vsync_seen_fall <= vsync_seen_fall || (vsync_o_d && !vsync_o);
+		end
 	end
 
 	property p_hsync_width;
-		@(posedge clk_pix_i)
+		@(posedge clk_pix_i) disable iff (!rst_n_i)
 		(hsync_o && !hsync_o_d) && hsync_seen_fall |-> hsync_low_cnt == 8'(apu_pkg::HSYNC_WIDTH);
 	endproperty
 	assert property (p_hsync_width) else $error("HSync width violation");
 
 	property p_vsync_width;
-		@(posedge clk_pix_i)
+		@(posedge clk_pix_i) disable iff (!rst_n_i)
 		(vsync_o && !vsync_o_d) && vsync_seen_fall |-> vsync_low_cnt == 12'(apu_pkg::VSYNC_WIDTH * apu_pkg::H_TOTAL);
 	endproperty
 	assert property (p_vsync_width) else $error("VSync width violation");
 
 	property p_de_not_in_hsync;
-		@(posedge clk_pix_i)
+		@(posedge clk_pix_i) disable iff (!rst_n_i)
 		!(de_o && !hsync_o);
 	endproperty
 	assert property (p_de_not_in_hsync) else $error("DE during HSync violation");
 
 	property p_de_not_in_vsync;
-		@(posedge clk_pix_i)
+		@(posedge clk_pix_i) disable iff (!rst_n_i)
 		!(de_o && !vsync_o);
 	endproperty
 	assert property (p_de_not_in_vsync) else $error("DE during VSync violation");
+	/* verilator lint_on SYNCASYNCNET */
 
 	always_ff @(posedge clk_pix_i or negedge rst_n_i) begin
 		if (!rst_n_i) begin
