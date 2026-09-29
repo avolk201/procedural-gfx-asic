@@ -113,7 +113,7 @@ coverage: sim/cordic_golden.hex
 	mv sim/coverage.dat sim/cov/cordic.dat
 	verilator_coverage --write sim/cov/merged.dat sim/cov/apu.dat sim/cov/plasma.dat sim/cov/i2c.dat sim/cov/config.dat sim/cov/cordic.dat
 	verilator_coverage sim/cov/merged.dat | tee sim/cov/summary.txt
-	@python3 -c "import re, sys; t = open('sim/cov/summary.txt').read(); g = lambda k: float(re.search(k + r'\s*: ([0-9.]+)%', t).group(1)); line, toggle = g('line'), g('toggle'); print(f'coverage floors: line >= $(COV_LINE_FLOOR), toggle >= $(COV_TOGGLE_FLOOR); measured line {line}, toggle {toggle}'); sys.exit(0 if line >= $(COV_LINE_FLOOR) and toggle >= $(COV_TOGGLE_FLOOR) else 1)"
+	@python3 -c "import re, sys, collections; txt = open('sim/cov/merged.dat').read(); recs = re.findall(chr(1) + 't' + chr(2) + r'([a-z_]+)' + chr(1) + r'page.*. (\d+)', txt); tot = collections.Counter(k for k, _ in recs); cov = collections.Counter(k for k, h in recs if int(h)); pct = {k: 100.0 * cov[k] / tot[k] for k in tot}; line, toggle = pct.get('line', 0.0), pct.get('toggle', 0.0); fl, ft = int(sys.argv[1]), int(sys.argv[2]); print('merged.dat: ' + ', '.join(k + ' ' + format(pct[k], '.1f') + '%' for k in sorted(pct))); print('floors: line >= ' + str(fl) + ', toggle >= ' + str(ft) + '; measured line ' + format(line, '.1f') + ', toggle ' + format(toggle, '.1f')); sys.exit(0 if line >= fl and toggle >= ft else 1)" $(COV_LINE_FLOOR) $(COV_TOGGLE_FLOOR)
 
 # Clean up build artifacts
 clean:
