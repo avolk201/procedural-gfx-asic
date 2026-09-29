@@ -2,9 +2,10 @@
 // Contract (mirrors tb/cordic_golden.py exactly):
 //   phase_i = angle / 2pi in turns, unsigned Q0.16, wraps mod 1.
 //   cos_o/sin_o = signed Q2.22, value = int / 2**22. |result| <= 1.
-//   latency = 18 clk, throughput 1 sample/clk. The number is not asserted
-//   here; tb/sim_cordic.cpp measures the fill delay and checks it, so this
-//   comment cannot rot away from the RTL.
+//   latency: tb fill = 18 iterations (sim_cordic's convention, B18); system
+//   latency registered-in to registered-out = 19 clk; throughput 1 sample/clk.
+//   The 18 is not asserted here; tb/sim_cordic.cpp measures the fill delay
+//   and checks it, so this comment cannot rot away from the RTL.
 //   vld_o[p] is high iff out_* corresponds to phase_i[p - 18].
 // Bit-exactness depends on signed >>> and the z==0 positive tie-break; see the
 // golden model. Accuracy vs libm <= 2**-14 (measured 3.17e-05); that bound is
