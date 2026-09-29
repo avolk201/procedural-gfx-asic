@@ -1,0 +1,394 @@
+Info: *******************************************************************
+Info: Running Quartus Prime Shell
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Copyright (C) 2025  Altera Corporation. All rights reserved.
+    Info: Your use of Altera Corporation's design tools, logic functions 
+    Info: and other software and tools, and any partner logic 
+    Info: functions, and any output files from any of the foregoing 
+    Info: (including device programming or simulation files), and any 
+    Info: associated documentation or information are expressly subject 
+    Info: to the terms and conditions of the Altera Program License 
+    Info: Subscription Agreement, the Altera Quartus Prime License Agreement,
+    Info: the Altera IP License Agreement, or other applicable license
+    Info: agreement, including, without limitation, that your use is for
+    Info: the sole purpose of programming logic devices manufactured by
+    Info: Altera and sold by Altera or its authorized distributors.  Please
+    Info: refer to the Altera Software License Subscription Agreements 
+    Info: on the Quartus Prime software download page.
+    Info: Processing started: Tue Sep 29 18:35:00 2026
+Info: Command: quartus_sh --flow compile de10nano_top
+Info: Quartus(args): compile de10nano_top
+Info: Project Name = /var/home/alana/Downloads/rv32-apu/de10nano_top
+Info: Revision Name = de10nano_top
+Info: *******************************************************************
+Info: Running Quartus Prime Analysis & Synthesis
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Processing started: Tue Sep 29 18:35:00 2026
+Info: Command: quartus_map --read_settings_files=on --write_settings_files=off de10nano_top -c de10nano_top
+Info (20030): Parallel compilation is enabled and will use 10 of the 10 processors detected
+Info (12021): Found 1 design units, including 0 entities, in source file rtl/apu_pkg.sv
+    Info (12022): Found design unit 1: apu_pkg (SystemVerilog) File: /var/home/alana/Downloads/rv32-apu/rtl/apu_pkg.sv Line: 2
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/apu_vga_timing.sv
+    Info (12023): Found entity 1: apu_vga_timing File: /var/home/alana/Downloads/rv32-apu/rtl/apu_vga_timing.sv Line: 1
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/apu_cordic.sv
+    Info (12023): Found entity 1: apu_cordic File: /var/home/alana/Downloads/rv32-apu/rtl/apu_cordic.sv Line: 12
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/apu_colorbars.sv
+    Info (12023): Found entity 1: apu_colorbars File: /var/home/alana/Downloads/rv32-apu/rtl/apu_colorbars.sv Line: 1
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/apu_plasma.sv
+    Info (12023): Found entity 1: apu_plasma File: /var/home/alana/Downloads/rv32-apu/rtl/apu_plasma.sv Line: 9
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/apu_top.sv
+    Info (12023): Found entity 1: apu_top File: /var/home/alana/Downloads/rv32-apu/rtl/apu_top.sv Line: 5
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/i2c_controller.sv
+    Info (12023): Found entity 1: i2c_controller File: /var/home/alana/Downloads/rv32-apu/rtl/i2c_controller.sv Line: 3
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/adv7513_config.sv
+    Info (12023): Found entity 1: adv7513_config File: /var/home/alana/Downloads/rv32-apu/rtl/adv7513_config.sv Line: 5
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/pll_25m.sv
+    Info (12023): Found entity 1: pll_25m File: /var/home/alana/Downloads/rv32-apu/rtl/pll_25m.sv Line: 5
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/sync_reset.sv
+    Info (12023): Found entity 1: sync_reset File: /var/home/alana/Downloads/rv32-apu/rtl/sync_reset.sv Line: 5
+Info (12021): Found 1 design units, including 1 entities, in source file rtl/de10nano_top.sv
+    Info (12023): Found entity 1: de10nano_top File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 5
+Info (12127): Elaborating entity "de10nano_top" for the top level hierarchy
+Warning (10036): Verilog HDL or VHDL warning at de10nano_top.sv(179): object "_unused_ok" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 179
+Info (12128): Elaborating entity "sync_reset" for hierarchy "sync_reset:u_sync_rst" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 40
+Info (12128): Elaborating entity "pll_25m" for hierarchy "pll_25m:u_pll" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 52
+Info (12128): Elaborating entity "altera_pll" for hierarchy "pll_25m:u_pll|altera_pll:altera_pll_i" File: /var/home/alana/Downloads/rv32-apu/rtl/pll_25m.sv Line: 41
+Info (10008): Verilog HDL or VHDL information: EDA Netlist Writer cannot regroup multidimensional array "wire_to_nowhere_64" into its bus
+Info (12130): Elaborated megafunction instantiation "pll_25m:u_pll|altera_pll:altera_pll_i" File: /var/home/alana/Downloads/rv32-apu/rtl/pll_25m.sv Line: 41
+Info (12133): Instantiated megafunction "pll_25m:u_pll|altera_pll:altera_pll_i" with the following parameter: File: /var/home/alana/Downloads/rv32-apu/rtl/pll_25m.sv Line: 41
+    Info (12134): Parameter "fractional_vco_multiplier" = "true"
+    Info (12134): Parameter "reference_clock_frequency" = "50.0 MHz"
+    Info (12134): Parameter "operation_mode" = "direct"
+    Info (12134): Parameter "number_of_clocks" = "1"
+    Info (12134): Parameter "output_clock_frequency0" = "25.175000 MHz"
+    Info (12134): Parameter "phase_shift0" = "0 ps"
+    Info (12134): Parameter "duty_cycle0" = "50"
+    Info (12134): Parameter "pll_type" = "General"
+    Info (12134): Parameter "pll_subtype" = "General"
+Info (12128): Elaborating entity "adv7513_config" for hierarchy "adv7513_config:u_cfg" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 88
+Info (12128): Elaborating entity "i2c_controller" for hierarchy "i2c_controller:u_i2c" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 104
+Warning (10036): Verilog HDL or VHDL warning at i2c_controller.sv(46): object "scl_oe_d" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/i2c_controller.sv Line: 46
+Warning (10036): Verilog HDL or VHDL warning at i2c_controller.sv(46): object "sda_oe_d" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/i2c_controller.sv Line: 46
+Warning (10036): Verilog HDL or VHDL warning at i2c_controller.sv(47): object "state_d" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/i2c_controller.sv Line: 47
+Warning (10036): Verilog HDL or VHDL warning at i2c_controller.sv(177): object "_unused_ok" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/i2c_controller.sv Line: 177
+Info (12128): Elaborating entity "apu_top" for hierarchy "apu_top:u_apu" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 170
+Warning (10036): Verilog HDL or VHDL warning at apu_top.sv(84): object "_unused_ok" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/apu_top.sv Line: 84
+Info (12128): Elaborating entity "apu_vga_timing" for hierarchy "apu_top:u_apu|apu_vga_timing:u_vga" File: /var/home/alana/Downloads/rv32-apu/rtl/apu_top.sv Line: 54
+Info (12128): Elaborating entity "apu_colorbars" for hierarchy "apu_top:u_apu|apu_colorbars:u_colorbars" File: /var/home/alana/Downloads/rv32-apu/rtl/apu_top.sv Line: 64
+Warning (10036): Verilog HDL or VHDL warning at apu_colorbars.sv(42): object "_unused_ok" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/apu_colorbars.sv Line: 42
+Info (12128): Elaborating entity "apu_plasma" for hierarchy "apu_top:u_apu|apu_plasma:u_plasma" File: /var/home/alana/Downloads/rv32-apu/rtl/apu_top.sv Line: 75
+Warning (10036): Verilog HDL or VHDL warning at apu_plasma.sv(94): object "_unused_ok" assigned a value but never read File: /var/home/alana/Downloads/rv32-apu/rtl/apu_plasma.sv Line: 94
+Info (12128): Elaborating entity "apu_cordic" for hierarchy "apu_top:u_apu|apu_plasma:u_plasma|apu_cordic:u_cordic_x" File: /var/home/alana/Downloads/rv32-apu/rtl/apu_plasma.sv Line: 76
+Warning (10230): Verilog HDL assignment warning at apu_cordic.sv(45): truncated value with size 32 to match size of target (25) File: /var/home/alana/Downloads/rv32-apu/rtl/apu_cordic.sv Line: 45
+Warning (12241): 1 hierarchies have connectivity warnings - see the Connectivity Checks report folder
+Warning (13024): Output pins are stuck at VCC or GND
+    Warning (13410): Pin "led_o[4]" is stuck at GND File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 8
+    Warning (13410): Pin "led_o[5]" is stuck at GND File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 8
+    Warning (13410): Pin "led_o[6]" is stuck at GND File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 8
+    Warning (13410): Pin "led_o[7]" is stuck at GND File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 8
+Info (286030): Timing-Driven Synthesis is running
+Info (17049): 14 registers lost all their fanouts during netlist optimizations.
+Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
+    Info (16011): Adding 9 node(s), including 0 DDIO, 1 PLL, 0 transceiver and 0 LCELL
+Warning (21074): Design contains 1 input pin(s) that do not drive logic
+    Warning (15610): No output dependent on input pin "btn_n_i[1]" File: /var/home/alana/Downloads/rv32-apu/rtl/de10nano_top.sv Line: 7
+Info (21057): Implemented 4179 device resources after synthesis - the final resource count might be different
+    Info (21058): Implemented 3 input pins
+    Info (21059): Implemented 36 output pins
+    Info (21060): Implemented 2 bidirectional pins
+    Info (21061): Implemented 4134 logic cells
+    Info (21065): Implemented 1 PLLs
+    Info (21062): Implemented 3 DSP elements
+Info: Quartus Prime Analysis & Synthesis was successful. 0 errors, 17 warnings
+    Info: Peak virtual memory: 817 megabytes
+    Info: Processing ended: Tue Sep 29 18:35:08 2026
+    Info: Elapsed time: 00:00:08
+    Info: Total CPU time (on all processors): 00:00:17
+Info: *******************************************************************
+Info: Running Quartus Prime Fitter
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Processing started: Tue Sep 29 18:35:09 2026
+Info: Command: quartus_fit --read_settings_files=off --write_settings_files=off de10nano_top -c de10nano_top
+Info: qfit2_default_script.tcl version: #1
+Info: Project  = de10nano_top
+Info: Revision = de10nano_top
+Info (20030): Parallel compilation is enabled and will use 10 of the 10 processors detected
+Info (119006): Selected device 5CSEBA6U23I7 for design "de10nano_top"
+Info (21076): High junction temperature operating condition is not set. Assuming a default value of '100'.
+Info (21076): Low junction temperature operating condition is not set. Assuming a default value of '-40'.
+Info (171003): Fitter is performing an Auto Fit compilation, which may decrease Fitter effort to reduce compilation time
+Warning (15714): Some pins have incomplete I/O assignments. Refer to the I/O Assignment Warnings report for details
+Info (184020): Starting Fitter periphery placement operations
+Warning (177007): PLL(s) placed in location FRACTIONALPLL_X0_Y15_N0 do not have a PLL clock to compensate specified - the Fitter will attempt to compensate all PLL clocks
+    Info (177008): PLL pll_25m:u_pll|altera_pll:altera_pll_i|general[0].gpll~FRACTIONAL_PLL
+Info (11178): Promoted 1 clock (1 global)
+    Info (11162): pll_25m:u_pll|altera_pll:altera_pll_i|outclk_wire[0]~CLKENA0 with 3621 fanout uses global clock CLKCTRL_G4
+Info (11191): Automatically promoted 1 clock (1 global)
+    Info (11162): clk_50m_i~inputCLKENA0 with 92 fanout uses global clock CLKCTRL_G7
+Info (184021): Fitter periphery placement operations ending: elapsed time is 00:00:00
+Info (332104): Reading SDC File: 'constraints/timing.sdc'
+Info (332110): Deriving PLL clocks
+    Info (332110): create_generated_clock -source {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|refclkin} -divide_by 512 -multiply_by 4125 -duty_cycle 50.00 -name {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]} {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]}
+    Info (332110): create_generated_clock -source {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|vco0ph[0]} -divide_by 16 -duty_cycle 50.00 -name {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}
+Info (332151): Clock uncertainty is not calculated until you update the timing netlist.
+Info (332097): The following timing edges are non-unate.  The Timing Analyzer will assume pos-unate behavior for these edges in the clock network.
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL  from: refclkin  to: fbclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER  from: vco0ph[0]  to: divclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_REFCLK_SELECT  from: clkin[0]  to: clkout
+Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in the Timing Analyzer to see clock uncertainties.
+Info (332129): Detected timing requirements -- optimizing circuit to achieve only the specified requirements
+Info (332111): Found 3 clocks
+    Info (332111):   Period   Clock Name
+    Info (332111): ======== ============
+    Info (332111):   20.000      clk_50m
+    Info (332111):    2.482 u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]
+    Info (332111):   39.718 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk
+Info (176233): Starting register packing
+Info (176235): Finished register packing
+    Extra Info (176219): No registers were packed into other blocks
+Info (11798): Fitter preparation operations ending: elapsed time is 00:00:09
+Info (170189): Fitter placement preparation operations beginning
+Info (14951): The Fitter is using Advanced Physical Optimization.
+Info (170190): Fitter placement preparation operations ending: elapsed time is 00:00:04
+Info (170191): Fitter placement operations beginning
+Info (170137): Fitter placement was successful
+Info (170192): Fitter placement operations ending: elapsed time is 00:00:01
+Info (170193): Fitter routing operations beginning
+Info (170195): Router estimated average interconnect usage is 2% of the available device resources
+    Info (170196): Router estimated peak interconnect usage is 27% of the available device resources in the region that extends from location X22_Y11 to location X32_Y22
+Info (170199): The Fitter performed an Auto Fit compilation.  Optimizations were skipped to reduce compilation time.
+    Info (170201): Optimizations that may affect the design's routability were skipped
+    Info (170200): Optimizations that may affect the design's timing were skipped
+Info (170194): Fitter routing operations ending: elapsed time is 00:00:02
+Info (11888): Total time spent on timing analysis during the Fitter is 3.60 seconds.
+Info (334003): Started post-fitting delay annotation
+Info (334004): Delay annotation completed successfully
+Info (334003): Started post-fitting delay annotation
+Info (334004): Delay annotation completed successfully
+Info (11801): Fitter post-fit operations ending: elapsed time is 00:00:06
+Info: Quartus Prime Fitter was successful. 0 errors, 2 warnings
+    Info: Peak virtual memory: 2572 megabytes
+    Info: Processing ended: Tue Sep 29 18:35:45 2026
+    Info: Elapsed time: 00:00:36
+    Info: Total CPU time (on all processors): 00:02:07
+Info: *******************************************************************
+Info: Running Quartus Prime Assembler
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Processing started: Tue Sep 29 18:35:46 2026
+Info: Command: quartus_asm --read_settings_files=off --write_settings_files=off de10nano_top -c de10nano_top
+Info (115030): Assembler is generating device programming files
+Info: Quartus Prime Assembler was successful. 0 errors, 0 warnings
+    Info: Peak virtual memory: 762 megabytes
+    Info: Processing ended: Tue Sep 29 18:35:51 2026
+    Info: Elapsed time: 00:00:05
+    Info: Total CPU time (on all processors): 00:00:04
+Info (293026): Skipped module Power Analyzer due to the assignment FLOW_ENABLE_POWER_ANALYZER
+Info: *******************************************************************
+Info: Running Quartus Prime Timing Analyzer
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Processing started: Tue Sep 29 18:35:52 2026
+Info: Command: quartus_sta de10nano_top -c de10nano_top
+Info: qsta_default_script.tcl version: #1
+Info (20030): Parallel compilation is enabled and will use 10 of the 10 processors detected
+Info (21076): High junction temperature operating condition is not set. Assuming a default value of '100'.
+Info (21076): Low junction temperature operating condition is not set. Assuming a default value of '-40'.
+Info (332104): Reading SDC File: 'constraints/timing.sdc'
+Info (332110): Deriving PLL clocks
+    Info (332110): create_generated_clock -source {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|refclkin} -divide_by 512 -multiply_by 4125 -duty_cycle 50.00 -name {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]} {u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]}
+    Info (332110): create_generated_clock -source {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|vco0ph[0]} -divide_by 16 -duty_cycle 50.00 -name {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk} {u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}
+Info (332151): Clock uncertainty is not calculated until you update the timing netlist.
+Info (332097): The following timing edges are non-unate.  The Timing Analyzer will assume pos-unate behavior for these edges in the clock network.
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL  from: refclkin  to: fbclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER  from: vco0ph[0]  to: divclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_REFCLK_SELECT  from: clkin[0]  to: clkout
+Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in the Timing Analyzer to see clock uncertainties.
+Info: Found TIMING_ANALYZER_REPORT_SCRIPT_INCLUDE_DEFAULT_ANALYSIS = ON
+Info: Analyzing Slow 1100mV 100C Model
+Info (332146): Worst-case setup slack is 13.868
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    13.868               0.000 clk_50m 
+    Info (332119):    24.117               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case hold slack is 0.232
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.232               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.365               0.000 clk_50m 
+Info (332146): Worst-case recovery slack is 15.994
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    15.994               0.000 clk_50m 
+    Info (332119):    36.380               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.729
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.729               0.000 clk_50m 
+    Info (332119):     1.060               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case minimum pulse width slack is 1.241
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     1.241               0.000 u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
+    Info (332119):     9.171               0.000 clk_50m 
+    Info (332119):    19.112               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332114): Report Metastability: Found 2 synchronizer chains.
+    Info (332114): Worst-Case MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+    Info (332114): Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+
+    Info (332114): Number of Synchronizer Chains Found: 2
+    Info (332114): Shortest Synchronizer Chain: 1 Registers
+    Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 0.000
+    Info (332114): Worst Case Available Settling Time: 17.761 ns
+    Info (332114): Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
+    Info (332114):   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 8.0
+    Info (332114): Typical MTBF values are calculated based on the nominal silicon characteristics, at nominal operating conditions.
+    Info (332114):   - Under typical conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 17.8
+Info: Analyzing Slow 1100mV -40C Model
+Info (334003): Started post-fitting delay annotation
+Info (334004): Delay annotation completed successfully
+Info (332097): The following timing edges are non-unate.  The Timing Analyzer will assume pos-unate behavior for these edges in the clock network.
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL  from: refclkin  to: fbclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER  from: vco0ph[0]  to: divclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_REFCLK_SELECT  from: clkin[0]  to: clkout
+Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in the Timing Analyzer to see clock uncertainties.
+Info (332146): Worst-case setup slack is 13.756
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    13.756               0.000 clk_50m 
+    Info (332119):    23.477               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case hold slack is 0.167
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.167               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.345               0.000 clk_50m 
+Info (332146): Worst-case recovery slack is 16.269
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    16.269               0.000 clk_50m 
+    Info (332119):    36.575               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.697
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.697               0.000 clk_50m 
+    Info (332119):     0.960               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case minimum pulse width slack is 1.241
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     1.241               0.000 u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
+    Info (332119):     9.287               0.000 clk_50m 
+    Info (332119):    19.046               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332114): Report Metastability: Found 2 synchronizer chains.
+    Info (332114): Worst-Case MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+    Info (332114): Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+
+    Info (332114): Number of Synchronizer Chains Found: 2
+    Info (332114): Shortest Synchronizer Chain: 1 Registers
+    Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 0.000
+    Info (332114): Worst Case Available Settling Time: 17.823 ns
+    Info (332114): Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
+    Info (332114):   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 1.7
+    Info (332114): Typical MTBF values are calculated based on the nominal silicon characteristics, at nominal operating conditions.
+    Info (332114):   - Under typical conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 17.8
+Info: Analyzing Fast 1100mV 100C Model
+Info (334003): Started post-fitting delay annotation
+Info (334004): Delay annotation completed successfully
+Info (332097): The following timing edges are non-unate.  The Timing Analyzer will assume pos-unate behavior for these edges in the clock network.
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL  from: refclkin  to: fbclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER  from: vco0ph[0]  to: divclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_REFCLK_SELECT  from: clkin[0]  to: clkout
+Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in the Timing Analyzer to see clock uncertainties.
+Info (332146): Worst-case setup slack is 16.263
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    16.263               0.000 clk_50m 
+    Info (332119):    31.881               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case hold slack is 0.102
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.102               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.177               0.000 clk_50m 
+Info (332146): Worst-case recovery slack is 17.461
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    17.461               0.000 clk_50m 
+    Info (332119):    37.691               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.367
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.367               0.000 clk_50m 
+    Info (332119):     0.548               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case minimum pulse width slack is 1.241
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     1.241               0.000 u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
+    Info (332119):     9.105               0.000 clk_50m 
+    Info (332119):    19.409               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332114): Report Metastability: Found 2 synchronizer chains.
+    Info (332114): Worst-Case MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+    Info (332114): Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+
+    Info (332114): Number of Synchronizer Chains Found: 2
+    Info (332114): Shortest Synchronizer Chain: 1 Registers
+    Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 0.000
+    Info (332114): Worst Case Available Settling Time: 18.827 ns
+    Info (332114): Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
+    Info (332114):   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 8.0
+    Info (332114): Typical MTBF values are calculated based on the nominal silicon characteristics, at nominal operating conditions.
+    Info (332114):   - Under typical conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 17.8
+Info: Analyzing Fast 1100mV -40C Model
+Info (332097): The following timing edges are non-unate.  The Timing Analyzer will assume pos-unate behavior for these edges in the clock network.
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL  from: refclkin  to: fbclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER  from: vco0ph[0]  to: divclk
+    Info (332098): Cell: u_pll|altera_pll_i|general[0].gpll~PLL_REFCLK_SELECT  from: clkin[0]  to: clkout
+Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in the Timing Analyzer to see clock uncertainties.
+Info (332146): Worst-case setup slack is 16.881
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    16.881               0.000 clk_50m 
+    Info (332119):    32.811               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case hold slack is 0.080
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.080               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.165               0.000 clk_50m 
+Info (332146): Worst-case recovery slack is 17.941
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):    17.941               0.000 clk_50m 
+    Info (332119):    38.010               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case removal slack is 0.308
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     0.308               0.000 clk_50m 
+    Info (332119):     0.454               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case minimum pulse width slack is 1.241
+    Info (332119):     Slack       End Point TNS Clock 
+    Info (332119): ========= =================== =====================
+    Info (332119):     1.241               0.000 u_pll|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
+    Info (332119):     9.047               0.000 clk_50m 
+    Info (332119):    19.401               0.000 u_pll|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332114): Report Metastability: Found 2 synchronizer chains.
+    Info (332114): Worst-Case MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+    Info (332114): Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
+
+    Info (332114): Number of Synchronizer Chains Found: 2
+    Info (332114): Shortest Synchronizer Chain: 1 Registers
+    Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 0.000
+    Info (332114): Worst Case Available Settling Time: 18.946 ns
+    Info (332114): Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
+    Info (332114):   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 1.7
+    Info (332114): Typical MTBF values are calculated based on the nominal silicon characteristics, at nominal operating conditions.
+    Info (332114):   - Under typical conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 17.8
+Info (332102): Design is not fully constrained for setup requirements
+Info (332102): Design is not fully constrained for hold requirements
+Info: Quartus Prime Timing Analyzer was successful. 0 errors, 0 warnings
+    Info: Peak virtual memory: 1273 megabytes
+    Info: Processing ended: Tue Sep 29 18:35:57 2026
+    Info: Elapsed time: 00:00:05
+    Info: Total CPU time (on all processors): 00:00:14
+Info (293000): Quartus Prime Full Compilation was successful. 0 errors, 19 warnings
+Info (23030): Evaluation of Tcl script /home/alana/altera_standard/25.1std/quartus/common/tcl/internal/qsh_flow.tcl was successful
+Info: Quartus Prime Shell was successful. 0 errors, 19 warnings
+    Info: Peak virtual memory: 679 megabytes
+    Info: Processing ended: Tue Sep 29 18:35:58 2026
+    Info: Elapsed time: 00:00:58
+    Info: Total CPU time (on all processors): 00:02:44

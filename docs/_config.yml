@@ -1,0 +1,11 @@
+title: "Alana Volkov: FPGA Notes"
+description: "Engineering notes on FPGA bring-up, verification, timing closure, and RV32 tooling."
+markdown: kramdown
+permalink: /blog/:year/:month/:day/:title/
+timezone: Australia/Sydney
+
+defaults:
+  - scope:
+      path: "_posts"
+    values:
+      layout: "default"

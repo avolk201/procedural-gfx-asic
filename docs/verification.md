@@ -126,10 +126,16 @@ reasoning behind each.
 - CDC MTBF: the specified pixel-to-50 MHz toggle chain measures > 1e9 years
   worst-case at 17.920 ns available settling (2026-09-25 D18 build);
   Quartus models it as length 1, conservative against the real two-flop
-  structure. The second, auto-detected chain is the 50 MHz to pixel reset
-  crossing (source rst_cnt[24], node u_sync_rst_pix|d[0]): detected, MTBF
-  not calculated, still justified by construction (B16). The DE alignment
-  gap closed with D18 (19e6272); the enforcing check runs in make sim.
+  structure. The second chain is the 50 MHz to pixel reset crossing
+  (source rst_cnt[24], node u_sync_rst_pix|d[0]). B16 left it auto-detected
+  with MTBF not calculated, justified by construction. Corrected
+  2026-09-29: SYNCHRONIZER_IDENTIFICATION FORCED plus CHAIN_LENGTH 2 on
+  u_sync_rst_pix|d[1] (6434290) make it a specified chain, and
+  report_metastability on the 2026-09-29 compile finds 2 chains, computes
+  both (fraction uncalculated 0.000), worst-case MTBF 1e9 years at 17.761 ns
+  worst-case settling (docs/artifacts/d18/metastability.rpt). The DE
+  alignment gap closed with D18 (19e6272); the enforcing check runs in
+  make sim.
 - The Python tools suite runs in CI via `make tools-tests`.
 - No coverage metric beyond this inventory.
 - No formal methods. The I2C contract is enforced by simulation only.

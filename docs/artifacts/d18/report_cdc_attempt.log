@@ -1,0 +1,40 @@
+Info: *******************************************************************
+Info: Running Quartus Prime Timing Analyzer
+    Info: Version 25.1std.0 Build 1129 10/21/2025 SC Standard Edition
+    Info: Copyright (C) 2025  Altera Corporation. All rights reserved.
+    Info: Your use of Altera Corporation's design tools, logic functions 
+    Info: and other software and tools, and any partner logic 
+    Info: functions, and any output files from any of the foregoing 
+    Info: (including device programming or simulation files), and any 
+    Info: associated documentation or information are expressly subject 
+    Info: to the terms and conditions of the Altera Program License 
+    Info: Subscription Agreement, the Altera Quartus Prime License Agreement,
+    Info: the Altera IP License Agreement, or other applicable license
+    Info: agreement, including, without limitation, that your use is for
+    Info: the sole purpose of programming logic devices manufactured by
+    Info: Altera and sold by Altera or its authorized distributors.  Please
+    Info: refer to the Altera Software License Subscription Agreements 
+    Info: on the Quartus Prime software download page.
+    Info: Processing started: Tue Sep 29 18:36:20 2026
+Info: Command: quartus_sta -t /tmp/cdc.tcl
+Info (20030): Parallel compilation is enabled and will use 10 of the 10 processors detected
+Info (21076): High junction temperature operating condition is not set. Assuming a default value of '100'.
+Info (21076): Low junction temperature operating condition is not set. Assuming a default value of '-40'.
+------------------------------------------------
+invalid command name "report_cdc"
+    while executing
+"unknown_original report_cdc"
+    ("eval" body line 1)
+    invoked from within
+"eval unknown_original $cmd $args"
+    (procedure "::unknown" line 7)
+    invoked from within
+"report_cdc"
+    (file "/tmp/cdc.tcl" line 3)
+------------------------------------------------
+Error (23031): Evaluation of Tcl script /tmp/cdc.tcl unsuccessful
+Error: Quartus Prime Timing Analyzer was unsuccessful. 1 error, 0 warnings
+    Error: Peak virtual memory: 864 megabytes
+    Error: Processing ended: Tue Sep 29 18:36:22 2026
+    Error: Elapsed time: 00:00:02
+    Error: Total CPU time (on all processors): 00:00:01

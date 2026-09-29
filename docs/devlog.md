@@ -465,3 +465,47 @@ spec, a second bookkeeper re-derives, and only the agreement is golden; a
 vector read off the implementation is a photograph, not a test. And base-0
 testing cannot see pc-relativity at all, so one nonzero-pc vector is worth
 a dozen at zero.
+
+## B20: the assertions Verilator checked and Quartus refused
+
+2026-09-29. rtl/apu_vga_timing.sv and rtl/i2c_controller.sv concurrent
+assertions. Status: FIXED (b87262f, 2026-09-29).
+
+Observed: five concurrent assertions (hsync and vsync width via monitor
+counters, DE never active during hsync low, SCL low half-period, SDA
+stable while SCL high) passed make regress under Verilator 5.050, and each
+had been seen red under its own design mutation in a /tmp copy before
+landing. The first Quartus compile of the same tree died in Analysis and
+Synthesis: Error 10174, "$fell is not supported for synthesis", at
+apu_vga_timing.sv:93, the seen_fall guard flop.
+
+Initial suspicion: a Quartus flow or part-family problem, because the same
+files had just compiled clean under Verilator and every earlier build on
+the box was green. Wrong turn: Error 10174 names a language feature, not a
+flow; the compile log said so on the first read.
+
+Fault: $rose, $fell and $past are simulation edge functions. Verilator
+accepts all three in procedural code and in properties; Quartus synthesis
+accepts none of them in synthesizable code. The guard flops and two
+property antecedents used them, so the design carried logic only one of
+its two reviewers had ever compiled. The same investigation killed two
+earlier premises: Verilator parses [*96] sequence repetition but expands it
+into a 32.4 MB C++ translation unit that g++ did not finish in seven
+minutes, and ##1 requires --timing, so the textbook sequence form of these
+properties cannot live in this Verilator-only flow at any optimization
+level tested.
+
+Fix: edge detection as explicit delay registers (hsync_o_d, vsync_o_d,
+scl_oe_d, sda_oe_d, state_d) with boolean antecedents, then the full green
+and red drill repeated on the refactored properties. Measured price on the
+2026-09-29 compile: divclk Fmax 72.79 to 64.1 MHz, worst setup 14.012 to
+13.868 ns on clk_50m (docs/artifacts/d18/sta.rpt), still 2.5x the 25.175
+MHz the beam requires. The same compile closed the B16 gap: with the
+u_sync_rst_pix assignments from 6434290, report_metastability specifies
+both chains by name and computes both, worst-case MTBF 1e9 years, fraction
+uncalculated 0.000 (docs/artifacts/d18/metastability.rpt).
+
+Lesson: the synthesis tool is the second reviewer for any assertion. A
+property only the simulator has compiled is a property nobody has checked,
+and edge functions in monitor logic are the specific trap, because they
+read as free hardware until a synthesizer bills them.
