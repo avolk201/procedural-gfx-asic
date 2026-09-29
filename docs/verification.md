@@ -110,8 +110,16 @@ discarding the temporary copy.
 6. M6, skip load alignment validation: 1 red check (`misaligned lh to x0
   traps before device access`).
 7. M7, ignore the byte offset when extracting device-read lanes: 2 red checks
-  (`lb to x0 still performs device read side effect`, `device byte load
-  extracts addressed lane`).
+   (`lb to x0 still performs device read side effect`, `device byte load
+   extracts addressed lane`).
+8. M8, return early on rd=x0 loads before the memory access: 2 red checks
+   (`lb to x0 still performs device read side effect`, `misaligned lh to
+   x0 traps before device access`); both vectors route through rd=0, so
+   skipping the access kills the side effect and the trap together.
+9. M9, remove the write-value right-justify in dispatch_device: 1 red check
+   (`device byte store right-justifies dirty rs2`). Entries 8 and 9 were run
+   by the agent in isolated /tmp copies on 2026-09-29, predictions written
+   before each run, copies discarded afterwards.
 
 Three ideas the testbenches are built on. docs/decisions.md carries the full
 reasoning behind each.
