@@ -45,6 +45,71 @@ OPIMM_EXPECTED = {
     'andi': 0,
 }
 
+JUMP_VECTORS = (
+    ('jal_x1_p4', 0x004000EF, 0x00001000, {1: 0xFFFFFFFF}, 0x00001004, 1,
+     0x00001004),
+    ('jal_x0_p8', 0x0080006F, 0x00001000, {}, 0x00001008, 0, 0x00000000),
+    ('jal_x1_m4', 0xFFDFF0EF, 0x00001000, {}, 0x00000FFC, 1, 0x00001004),
+    ('jal_x1_0', 0x000000EF, 0x00001000, {}, 0x00001000, 1, 0x00001004),
+    ('jal_x1_max_p', 0x7FFFF0EF, 0x00000000, {}, 0x000FFFFE, 1, 0x00000004),
+    ('jal_x1_min_m', 0x800000EF, 0x00001000, {}, 0xFFF01000, 1, 0x00001004),
+    ('jal_x1_wrap_fwd', 0x008000EF, 0x00007FFC, {}, 0x00008004, 1,
+     0x00008000),
+    ('jal_x1_wrap_bwd', 0xFFDFF0EF, 0x00000000, {}, 0xFFFFFFFC, 1,
+     0x00000004),
+    ('jal_x31_p4', 0x00400FEF, 0x00001000, {31: 0xDEADBEEF}, 0x00001004, 31,
+     0x00001004),
+    ('jalr_x1_x2_0', 0x000100E7, 0x00001000, {2: 0x00002000}, 0x00002000, 1,
+     0x00001004),
+    ('jalr_ret', 0x00008067, 0x00001000, {1: 0x00002004}, 0x00002004, 0,
+     0x00000000),
+    ('jalr_jr_x2', 0x00010067, 0x00001000, {2: 0x00003000}, 0x00003000, 0,
+     0x00000000),
+    ('jalr_x1_x2_p8', 0x008100E7, 0x00001000, {2: 0x00002000}, 0x00002008, 1,
+     0x00001004),
+    ('jalr_x1_x2_m4', 0xFFC100E7, 0x00001000, {2: 0x00002000}, 0x00001FFC, 1,
+     0x00001004),
+    ('jalr_x1_x2_max_imm', 0x7FF100E7, 0x00001000, {2: 0x00001801},
+     0x00002000, 1, 0x00001004),
+    ('jalr_x1_x2_min_imm', 0x800100E7, 0x00001000, {2: 0x00002800},
+     0x00002000, 1, 0x00001004),
+    ('jalr_x1_x2_odd_imm_clear', 0x001100E7, 0x00001000, {2: 0x00002000},
+     0x00002000, 1, 0x00001004),
+    ('jalr_x2_x2_p4', 0x00410167, 0x00001000, {2: 0x00002000}, 0x00002004, 2,
+     0x00001004),
+    ('jalr_x1_x0_p8', 0x008000E7, 0x00001000, {}, 0x00000008, 1, 0x00001004),
+    ('jalr_x1_x2_wrap_carry', 0x001100E7, 0x00001000, {2: 0xFFFFFFFF},
+     0x00000000, 1, 0x00001004),
+    ('jalr_x1_x2_wrap_borrow', 0xFF8100E7, 0x00001000, {2: 0x00000004},
+     0xFFFFFFFC, 1, 0x00001004),
+    ('jalr_x0_x2_p4', 0x00410067, 0x00001000, {2: 0x00002000}, 0x00002004, 0,
+     0x00000000),
+)
+
+BRANCH_VECTORS = (
+    ('beq_taken_x1eqx1_p8', 0x00108463, {1: 0xFFFFFFFF}, 0x00001008),
+    ('beq_nt_p1_m8', 0xFE208CE3, {1: 0xFFFFFFFF, 2: 1}, 0x00001004),
+    ('bne_taken_p1_m4', 0xFE209EE3, {1: 0xFFFFFFFF, 2: 1}, 0x00000FFC),
+    ('bne_nt_x1eqx1_p8', 0x00109463, {1: 1}, 0x00001004),
+    ('blt_taken_p1_m4', 0xFE20CEE3, {1: 0xFFFFFFFF, 2: 1}, 0x00000FFC),
+    ('blt_nt_p2_p8', 0x0020C463, {1: 1, 2: 0xFFFFFFFF}, 0x00001004),
+    ('bge_taken_p2_p8', 0x0020D463, {1: 1, 2: 0xFFFFFFFF}, 0x00001008),
+    ('bge_nt_p1_m8', 0xFE20DCE3, {1: 0xFFFFFFFF, 2: 1}, 0x00001004),
+    ('bltu_taken_p2_p8', 0x0020E463, {1: 1, 2: 0xFFFFFFFF}, 0x00001008),
+    ('bltu_nt_p1_m4', 0xFE20EEE3, {1: 0xFFFFFFFF, 2: 1}, 0x00001004),
+    ('bgeu_taken_p1_m4', 0xFE20FEE3, {1: 0xFFFFFFFF, 2: 1}, 0x00000FFC),
+    ('bgeu_nt_p2_m8', 0xFE20FCE3, {1: 1, 2: 0xFFFFFFFF}, 0x00001004),
+    ('beq_taken_x0eqx0_p8', 0x00000463, {}, 0x00001008),
+)
+
+U_VECTORS = (
+    ('lui_x5_p12345', 0x123452B7, 0x00001000, 5, 0x12345000),
+    ('lui_x0_dead0', 0xDEAD0037, 0x00001000, 0, 0x00000000),
+    ('auipc_x5_p12345', 0x12345297, 0x00001000, 5, 0x12346000),
+    ('auipc_x5_m1', 0xFFFFF297, 0x00001000, 5, 0x00000000),
+    ('auipc_x6_maxneg', 0x80000317, 0x00000000, 6, 0x80000000),
+)
+
 
 def encode(mnemonic):
     fmt, opcode, funct3, funct7 = ENC[mnemonic]
@@ -75,6 +140,20 @@ def run_word(word, initial):
     return machine, hart, machine.step(0)
 
 
+def run_vector(word, pc, initial):
+    machine = Machine(hart_count=1)
+    hart = machine.harts[0]
+    for register, value in initial.items():
+        hart.reg_write(register, value)
+    hart.pc = pc
+    hart.mem[pc:pc + 4] = word.to_bytes(4, 'little')
+    return machine, hart, machine.step(0)
+
+
+def retire_row(pc, word, rd, value):
+    return f'0,{pc:08x},{word:08x},{rd},{value:08x},,,,'
+
+
 def scheduled_machine(schedule, seed=None):
     instructions_per_hart = 5
     total_instructions = 2 * instructions_per_hart
@@ -95,6 +174,16 @@ def scheduled_machine(schedule, seed=None):
     state = tuple((tuple(hart.x), bytes(hart.mem), hart.halted)
                   for hart in machine.harts)
     return machine, state
+
+
+def loop_machine():
+    image = b''.join(
+        word.to_bytes(4, 'little') for word in (
+            0x00400093, 0x00110113, 0xFFF08093, 0xFE009CE3, 0x00100073))
+    machine = Machine(max_steps=4 * 26 + 64)
+    for hart in machine.harts:
+        hart.mem[:len(image)] = image
+    return machine
 
 
 def selftest():
@@ -332,6 +421,83 @@ def selftest():
           not machine.mem_write(0, DEVICE_BASE, 4, 0x12345678, 0x00000023) and
           machine.harts[0].halted == 'bus' and machine.trace ==
             ['0,00000000,,,,halt:bus,,,'])
+
+    for name, word, pc, initial, pc_after, rd, rd_value in JUMP_VECTORS:
+        machine, hart, retired = run_vector(word, pc, initial)
+        check(f'{name} retires and traces', retired and
+              hart.pc == pc_after and hart.reg_read(rd) == rd_value and
+              machine.trace == [retire_row(pc, word, rd, rd_value)])
+
+    machine, hart, retired = run_vector(0x000100E7, 0x00001000,
+                                        {2: 0x00002002})
+    retired_ok = (retired and hart.pc == 0x00002002 and
+                  hart.reg_read(1) == 0x00001004)
+    second = machine.step(0) if retired_ok else False
+    check('jalr lands 2 mod 4 then fetch halts illegal', retired_ok and
+          not second and hart.halted == 'illegal' and
+          machine.trace == [
+              retire_row(0x00001000, 0x000100E7, 1, 0x00001004),
+              '0,00002002,,,,halt:illegal,,,',
+          ])
+
+    for name, word, initial, pc_after in BRANCH_VECTORS:
+        machine, hart, retired = run_vector(word, 0x00001000, initial)
+        check(f'{name} retires with rd-zero row', retired and
+              hart.pc == pc_after and
+              machine.trace == [retire_row(0x00001000, word, 0, 0)])
+
+    fence_calls = []
+
+    def fence_device(hart_id, address, is_write, value, size):
+        fence_calls.append((hart_id, address, is_write, value, size))
+        return True
+
+    machine = Machine(hart_count=1, device_dispatch=fence_device)
+    hart = machine.harts[0]
+    hart.pc = 0x00001000
+    hart.mem[0x1000:0x1004] = (0x0330000F).to_bytes(4, 'little')
+    hart.mem[0x1004:0x1008] = (0x00100073).to_bytes(4, 'little')
+    mem_before = bytes(hart.mem)
+    first = machine.step(0)
+    check('fence rw,rw retires as NOP, memory and devices untouched', first and
+          hart.pc == 0x00001004 and bytes(hart.mem) == mem_before and
+          fence_calls == [] and
+          machine.trace == [retire_row(0x1000, 0x0330000F, 0, 0)])
+    second = machine.step(0) if first else False
+    check('fence ebreak halt row follows', not second and
+          hart.halted == 'ebreak' and
+          machine.trace[1:] == ['0,00001004,00100073,,,halt:ebreak,,,'])
+
+    machine, hart, retired = run_vector(0x0000100F, 0x00001000, {})
+    check('fence.i reserved encoding halts illegal with word', not retired and
+          hart.halted == 'illegal' and
+          machine.trace == ['0,00001000,0000100f,,,halt:illegal,,,'])
+
+    for name, word, pc, rd, value in U_VECTORS:
+        machine, hart, retired = run_vector(word, pc, {})
+        check(f'{name} writes and retires', retired and
+              hart.pc == pc + 4 and hart.reg_read(rd) == value and
+              machine.trace == [retire_row(pc, word, rd, value)])
+
+    machine = loop_machine()
+    machine.run('rr')
+    rr_state = [(tuple(hart.x), bytes(hart.mem), hart.halted)
+                 for hart in machine.harts]
+    invariant = (machine.steps == 26 and
+                 all(halted == 'ebreak' for _, _, halted in rr_state) and
+                 machine.harts[0].x[1] == 0 and machine.harts[0].x[2] == 4)
+    for seed in range(8):
+        random_run = loop_machine()
+        random_run.run('random', seed=seed)
+        invariant = invariant and random_run.steps == 26 and [
+            (tuple(hart.x), bytes(hart.mem), hart.halted)
+            for hart in random_run.harts] == rr_state
+    scripted = loop_machine()
+    scripted.run([0] * 15 + [1] * 15)
+    invariant = invariant and scripted.steps == 26 and [
+        (tuple(hart.x), bytes(hart.mem), hart.halted)
+        for hart in scripted.harts] == rr_state
+    check('looping bne program is schedule-invariant, 26 retires', invariant)
 
     print(f'\nSummary: {FAILS} failed out of {CHECKS} checks')
     return FAILS

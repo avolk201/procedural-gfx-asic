@@ -8,18 +8,19 @@ device callback. Retirement records are appended by ``step`` in execution
 order, so interleaved harts share one deterministic trace stream.
 
 halt record rather than escape from a cosimulation run.
-This increment executes the RV32I OP, OP-IMM, load, and store instruction
-families. Other legal instruction families raise NotImplementedError until
-added. When a family is implemented, its reserved encodings must decode to an
-``illegal`` halt record rather than escape from a cosimulation run.
+This increment executes the RV32I OP, OP-IMM, load, store, branch, jump,
+U-type, and FENCE instruction families. Other legal instruction families
+raise NotImplementedError until added. When a family is implemented, its
+reserved encodings must decode to an ``illegal`` halt record rather than
+escape from a cosimulation run.
 """
 
 import random
 
 if __package__:
-    from .rv32enc import decode_mnemonic, fields
+    from .rv32enc import decode_mnemonic, fields, unpack_b, unpack_j
 else:
-    from rv32enc import decode_mnemonic, fields
+    from rv32enc import decode_mnemonic, fields, unpack_b, unpack_j
 
 
 # Contract §4: 24 KiB I-RAM + 8 KiB D-RAM per hart.
@@ -29,6 +30,15 @@ MASK32 = 0xFFFFFFFF
 HALT_REASONS = (None, 'ebreak', 'ecall', 'illegal', 'budget', 'bus')
 LOADS = {'lb': 1, 'lbu': 1, 'lh': 2, 'lhu': 2, 'lw': 4}
 STORES = {'sb': 1, 'sh': 2, 'sw': 4}
+BRANCHES = {
+    'beq': lambda a, b: a == b,
+    'bne': lambda a, b: a != b,
+    'blt': lambda a, b: s32(a) < s32(b),
+    'bge': lambda a, b: s32(a) >= s32(b),
+    'bltu': lambda a, b: a < b,
+    'bgeu': lambda a, b: a >= b,
+}
+JUMPS = ('jal', 'jalr')
 
 
 def w32(value):
@@ -187,6 +197,9 @@ class Machine:
                 'ori': lambda: rs1 | w32(immediate),
                 'andi': lambda: rs1 & w32(immediate),
             }[mnemonic]()
+        elif mnemonic in ('lui', 'auipc'):
+            imm = instruction_fields['imm20'] << 12
+            result = imm if mnemonic == 'lui' else pc + imm
         elif mnemonic in LOADS or mnemonic in STORES:
             if mnemonic in LOADS:
                 immediate = sign_extend(instruction_fields['imm12'], 12)
@@ -224,6 +237,36 @@ class Machine:
                     str(hart_id), f'{pc:08x}', f'{word:08x}', '', '',
                     mnemonic, f'{addr:08x}', str(size), f'{lanes:08x}',
                 )))
+            if self.steps >= self.max_steps:
+                self._halt_at_budget()
+            return True
+        elif mnemonic in BRANCHES:
+            if BRANCHES[mnemonic](rs1, rs2):
+                hart.pc = w32(pc + unpack_b(word))
+            else:
+                hart.pc = w32(pc + 4)
+            self.steps += 1
+            self._record_retirement(hart_id, pc, word, 0, 0)
+            if self.steps >= self.max_steps:
+                self._halt_at_budget()
+            return True
+        elif mnemonic in JUMPS:
+            if mnemonic == 'jal':
+                target = w32(pc + unpack_j(word))
+            else:
+                immediate = sign_extend(instruction_fields['imm12'], 12)
+                target = w32((rs1 + immediate) & ~1)
+            hart.pc = target
+            hart.reg_write(rd, pc + 4)
+            self.steps += 1
+            self._record_retirement(hart_id, pc, word, rd, hart.reg_read(rd))
+            if self.steps >= self.max_steps:
+                self._halt_at_budget()
+            return True
+        elif mnemonic == 'fence':
+            hart.pc = w32(pc + 4)
+            self.steps += 1
+            self._record_retirement(hart_id, pc, word, 0, 0)
             if self.steps >= self.max_steps:
                 self._halt_at_budget()
             return True
