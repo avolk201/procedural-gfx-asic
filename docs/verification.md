@@ -62,7 +62,7 @@ and the I2C timing come straight out of those documents, not out of thin air.
 | de10nano_top on DE10-Nano | hardware bring-up: colorbars 2026-09-23, plasma 2026-09-25 | `quartus_sh --flow compile de10nano_top`, then `quartus_pgm -c "DE-SoC" -m jtag -o "p;output_files/de10nano_top.sof@2"` | lock LED instant on KEY0 release, blink ~1 Hz, real ADV7513 ACKed all 13 writes, colorbars on a 640x480 monitor; worst slack +14.875/+0.163/+17.747/+0.358/+1.241, TNS 0.000, Slow 1100mV 100C (B16). Plasma build 2026-09-25 (.sof 0x00E40517): worst slack +14.032/+0.271/+16.882/+0.943/+1.241, TNS 0.000, divclk Fmax 72.14 MHz, 2058 ALMs / 3 DSP / 0 M10K bits, boiling plasma full-width on one OLED (B17). D18 build 2026-09-25 (.sof 0x00E4BE7C): worst slack +14.012/+0.168/+16.599/+0.698/+1.241, TNS 0.000, divclk Fmax 72.79 MHz, 2067 ALMs / 3 DSP / 0 M10K bits, DE aligned to the active window, image unchanged on the same OLED (B18). 2026-09-29 flash of the assertion build at a5b8fde: .sof sha256 184215f8..., plasma full-width on a TV, dashboard nominal, same-day observation |
 | apu_cordic + golden model | CORDIC vs Python model | `python3 tb/cordic_golden.py` (24 checks) then `make sim_cordic` (14) | RTL bit-exact to model over all 65536 phases; max |err| vs libm 3.172e-05 <= 2**-14; latency: fill 18 per sim_cordic's iteration convention = 19 system clocks (B18), 1/clk |
 | rv32asm + rv32enc (tools/) | RV32I_Zicsr encoding fidelity, CPU ladder step 2 | `python3 tools/tests/test_rv32asm.py`, `python3 tools/tests/test_rv32enc.py` | 101 + 246 checks, exit code = fail count; 46-row encode/decode round trip; spec-derived scramble anchors; la is pc-relative AUIPC+ADDI (B19); suites seen to fail under three mutations: SLTIU funct3, LA pc, one unpack_b bit |
-| rv32iss (tools/) | OP/OP-IMM and load/store semantics, private memory, CSV retirement/halt trace, schedule-invariant completion | `python3 tools/tests/test_rv32iss.py` (also `make tools-tests`) | 56 checks; rr + scripted + 8 seeded schedules reach ebreak with identical registers and private RAM |
+| rv32iss (tools/) | OP/OP-IMM, load/store, branch, jump, U-type and FENCE semantics, private memory, CSV retirement/halt trace, schedule-invariant completion | `python3 tools/tests/test_rv32iss.py` (also `make tools-tests`) | 101 checks; rr + scripted + 8 seeded schedules reach ebreak with identical registers and private RAM, straight-line program and looping-bne program (26 retires per run) |
 | make coverage, all five harnesses | merged line/toggle/branch/expr coverage with enforced floors | `make coverage`, also a CI step | 2026-09-29 baseline: line 88.7% (133/150), toggle 87.3% (2465/2824), branch 98.1% (102/104), expr 95.7% (154/161); floors line >= 85 and toggle >= 84, baseline minus margin per B10; per-harness dats merged with verilator_coverage |
 
 
@@ -91,8 +91,8 @@ and the I2C timing come straight out of those documents, not out of thin air.
 ### ISS memory mutations (isolated `/tmp` copies)
 
 Each mutation below was applied alone to a fresh copy of `tools/` and run
-against the 56-check ISS suite. All returned nonzero and were restored by
-discarding the temporary copy.
+against the 56-check ISS suite of that time; step 3 grew the suite to 101.
+All returned nonzero and were restored by discarding the temporary copy.
 
 1. M1, return raw data instead of sign-extending signed loads: 2 red checks
   (`lb sign extension and memory trace`, `lh sign extension and memory
@@ -121,6 +121,35 @@ discarding the temporary copy.
    (`device byte store right-justifies dirty rs2`). Entries 8 and 9 were run
    by the agent in isolated /tmp copies on 2026-09-29, predictions written
    before each run, copies discarded afterwards.
+
+### ISS control-transfer mutations (step 3, isolated /tmp copies)
+
+Predictions were written before each run. Each mutation was applied alone to
+a fresh copy of `tools/`, landing verified by exact-match grep before
+believing the color, and the copy discarded afterwards. Run by the agent
+2026-10-03 against the 101-check suite.
+
+- M-A, taken branch target as pc+4+imm: 8 red (7 taken vectors plus the
+  looping-bne schedule-invariance check).
+- M-B, branch immediate assembled from the contiguous imm12 field (leaks
+  rs2[4:0] at 24:20): 8 red, same set; the loop red is a downstream
+  consequence.
+- M-C1, blt compares unsigned: first run 1 red, predicted 2. The cause was
+  the vector set: a not-taken vector at offset +4 is degenerate, a wrongly
+  taken branch lands exactly on pc+4, the same observable. The two +4 rows
+  were re-encoded at +8 (bne_nt_x1eqx1_p8 0x00109463, blt_nt_p2_p8
+  0x0020C463), re-run: 2 red. Vector change, no expectation loosened.
+- M-C2, bgeu compares signed: 2 red (bgeu_taken_p1_m4, bgeu_nt_p2_m8).
+- M-D, branch retirement row prints fields[rd]: 13 red, every branch row
+  (all offsets chosen so bits 11:7 are nonzero).
+- M-E, jalr base re-read after the link writeback: 1 red
+  (jalr_x2_x2_p4, landing 0x1008 instead of 0x2004). The unprivileged volume
+  carries no explicit old-value sentence in this revision; the rule is the
+  printed 2.5.1 order plus Table 3.
+- M-F, jalr drops the bit-0 clear: 1 red (jalr_x1_x2_odd_imm_clear,
+  pc 0x2001).
+- M-G, fence halts instead of retiring: 2 red (the retire row and the ebreak
+  follower); the fence.i reserved-encoding row stays green.
 
 Three ideas the testbenches are built on. docs/decisions.md carries the full
 reasoning behind each.
@@ -172,6 +201,20 @@ reasoning behind each.
   alignment gap closed with D18 (19e6272); the enforcing check runs in
   make sim.
 - The Python tools suite runs in CI via `make tools-tests`.
+- ISS instruction-misaligned reporting deviates from unprivileged volume 2.2
+  (p. 25): the spec generates the exception on the taken branch or jump
+  itself; the ISS retires the jump and halts at the next fetch, so the halt
+  row carries the target pc and an empty inst_word. Open decision before RTL
+  M1: move the check onto the jump (contract section 9 trace format allows
+  it, pc is the faulting PC and inst_word the fetched word) or keep the
+  fetch-stage convention as an acknowledged deviation. RTL and cosim must
+  match whichever stands.
+- ISS vectors can only retire from a source pc inside the per-hart 32 KiB
+  window; an out-of-window fetch halts bus before decode. Two early jump
+  rows were amended 2026-10-03 for this (jal_x1_min_m to pc 0x1000, target
+  0xFFF01000; jal_x1_wrap_fwd to pc 0x7FFC, link 0x8000, target 0x8004).
+  The full 2^32 link wrap is unreachable in the ISS and becomes a live case
+  only in RTL cosim against the full address map.
 - Coverage is merged line and toggle across the five harnesses with floors
   (make coverage, CI step); branch and expr are reported but not floored.
   The 17 uncovered line points at baseline are not itemized yet; itemize

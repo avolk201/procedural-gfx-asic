@@ -509,3 +509,58 @@ Lesson: the synthesis tool is the second reviewer for any assertion. A
 property only the simulator has compiled is a property nobody has checked,
 and edge functions in monitor logic are the specific trap, because they
 read as free hardware until a synthesizer bills them.
+
+## B21: vectors that two bookkeepers agreed on still could not run
+
+2026-10-03. tools/rv32iss.py step 3, its vector tables, unprivileged volume
+20250508. Status: FIXED (d126bf2 ISS block plus 45 checks; docs in this
+commit).
+
+Observed: the jump vector CSV survived independent re-derivation of every
+word, then the first probe run went red on two rows: jal_x1_min_m at
+pc=0x100000 and jal_x1_wrap_fwd at pc=0xfffffffc. The encodings are legal
+and the arithmetic was right; the rows cannot retire, because the ISS fetch
+contract (contract section 4) halts bus on any source pc with pc+4 past the
+32 KiB window. Two more findings in the same review: two not-taken branch
+rows at offset +4 were degenerate (mutation M-C1 reddened 1 of the predicted
+2, because a wrongly taken +4 branch lands exactly on pc+4, the same
+observable as not-taken); and two banked claims failed the page check.
+"JALR uses the original rs1 when rd==rs1, printed p. 30": the sentence is
+not in this volume and not in the 2026-09-24 intermediate snapshot; what is
+printed is the 2.5.1 order (target from rs1, then pc+4 written to rd, p. 31)
+plus Table 3's rd=rs1 row on p. 32. "The pc&3 fetch halt stays unreachable
+through legal control flow": 2.2, p. 25, says a taken branch or jump to a
+target congruent 2 mod 4 generates an instruction-address-misaligned
+exception, reported on the jump itself.
+
+Initial suspicion: the probe harness was wrong about the window (the harness
+is the contract; it was right); the mutation prediction was wrong (the
+vector was); the agent's floated fence word was close enough (0x0aa0000f for
+rw,rw: wrong in both nibble value and method; the ch. 35 rows on p. 610 give
+RW=0011 via the TSO row and W=0001 via the PAUSE row, so bare rw,rw is
+0x0330000f, and those rows prove it without any bit-order sentence at all).
+
+Fault: confidence without contact with the machine, twice, and a citation
+that aged across spec revisions with nobody re-checking it. Agreement
+between two bookkeepers proves the encoding, not that the vector executes.
+Degeneracy was screened on the taken half of the branch table only. The
+fence nibble was quoted from memory when two printed table rows carried it.
+
+Fix: min_m re-anchored (pc 0x1000, target 0xFFF01000, keeps max-negative-imm
+and the 32-bit wrap arithmetic); wrap_fwd re-anchored to the boundary
+(pc 0x7FFC, link 0x8000, target 0x8004); bne_nt and blt_nt re-encoded at +8
+(0x00109463, 0x0020C463); vector rule: a branch vector's offset differs from
+both 0 and +4. The fence-as-NOP stance now cites 2.7 pp. 36-38: base
+implementations shall ignore the rs1/rd fields, reserved configurations are
+treated as fm=0000 FENCE, and simple implementations may ignore the
+predecessor and successor fields outright. The jump-time versus fetch-time
+misaligned reporting deviation is recorded in Known gaps, decision due
+before RTL M1. 8/8 control-transfer mutations land-verified with red counts
+equal to predictions after the fixes (docs/verification.md).
+
+Lesson: a table of agreed vectors is a hypothesis until it runs; contact the
+machine before believing the arithmetic. Degeneracy checks must cover both
+outcomes of a predicate, not only the interesting one. A page citation is
+per revision: re-extract, do not inherit. The fence case is the friendly
+version of the same disease: the guess happened to be nearly right, and only
+the printed table rows made it checkable.
